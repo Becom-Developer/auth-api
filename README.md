@@ -2,6 +2,31 @@
 
 認証をする共通のアプリ
 
+## SETUP
+
+Perl
+
+```zsh
+echo '5.14.4' > .perl-version
+echo "requires 'DBD::SQLite', '==1.54';" >> cpanfile
+echo "requires 'Test::Trap';" >> cpanfile
+```
+
+Module
+
+```zsh
+curl -L https://cpanmin.us/ -o cpanm
+chmod +x cpanm
+./cpanm -l ./local --installdeps .
+```
+
+ignore
+
+```zsh
+echo 'local' >> .gitignore
+echo 'db' >> .gitignore
+```
+
 ## Memo
 
 ```text
