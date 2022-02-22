@@ -4,6 +4,13 @@
 
 ## SETUP
 
+ignore
+
+```zsh
+echo 'local' >> .gitignore
+echo 'db' >> .gitignore
+```
+
 Perl
 
 ```zsh
@@ -18,13 +25,6 @@ Module
 curl -L https://cpanmin.us/ -o cpanm
 chmod +x cpanm
 ./cpanm -l ./local --installdeps .
-```
-
-ignore
-
-```zsh
-echo 'local' >> .gitignore
-echo 'db' >> .gitignore
 ```
 
 ## Memo
