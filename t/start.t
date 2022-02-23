@@ -10,6 +10,7 @@ use Encode qw(encode decode);
 use JSON::PP;
 use File::Spec;
 use Beauth;
+use Beauth::Render;
 $ENV{"BEAUTH_MODE"} = 'test';
 
 subtest 'File' => sub {
@@ -22,7 +23,40 @@ subtest 'File' => sub {
 
 subtest 'Class and Method' => sub {
     my @methods = qw{new};
-    can_ok( new_ok('Beauth'), (@methods) );
+    can_ok( new_ok('Beauth'),         (@methods) );
+    can_ok( new_ok('Beauth::Render'), (@methods) );
+    can_ok( new_ok('Beauth::Error'),  (@methods) );
+};
+
+subtest 'Framework Render' => sub {
+    my $obj   = new_ok('Beauth::Render');
+    my $chars = '日本語';
+    {
+        my $bytes = encode( 'UTF-8', $chars );
+        trap { $obj->raw($chars) };
+        like( $trap->stdout, qr/$bytes/, 'render method raw' );
+    }
+    {
+        my $hash  = { jang => $chars };
+        my $bytes = encode_json($hash);
+        trap { $obj->all_items_json($hash) };
+        like( $trap->stdout, qr/$bytes/, 'render method all_items_json' );
+    }
+};
+
+subtest 'Framework Error' => sub {
+    my $obj   = new_ok('Beauth::Error');
+    my $chars = '予期せぬエラー';
+    {
+        my $hash = $obj->commit($chars);
+        like( $hash->{error}->{message}, qr/$chars/, "error commit" );
+    }
+    {
+        my $hash  = $obj->commit($chars);
+        my $bytes = encode_json($hash);
+        trap { $obj->output($chars); };
+        like( $trap->stdout, qr/$bytes/, 'error output' );
+    }
 };
 
 subtest 'Build' => sub {
