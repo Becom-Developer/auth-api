@@ -22,10 +22,16 @@ subtest 'File' => sub {
 };
 
 subtest 'Class and Method' => sub {
-    my @methods = qw{new};
+    my @methods = (
+        'new',           'time_stamp',     'is_test_mode', 'dump',
+        'home',          'homedb',         'homebackup',   'db_file_path',
+        'sql_file_path', 'dump_file_path', 'dump_file',    'db_file',
+        'insert_csv',    'build_dbh'
+    );
     can_ok( new_ok('Beauth'),         (@methods) );
     can_ok( new_ok('Beauth::Render'), (@methods) );
     can_ok( new_ok('Beauth::Error'),  (@methods) );
+    can_ok( new_ok('Beauth::Build'),  (@methods) );
 };
 
 subtest 'Framework Render' => sub {
@@ -59,25 +65,46 @@ subtest 'Framework Error' => sub {
     }
 };
 
-subtest 'Build' => sub {
-    my $build = new_ok('Beauth::Build');
+subtest 'Framework Build' => sub {
+    my $obj  = new_ok('Beauth::Build');
+    my $hash = $obj->start();
+    my @keys = keys %{$hash};
+    my $key  = shift @keys;
+    ok( $key eq 'error', 'error message' );
+    {
+        my $args = { method => 'init' };
+        my $hash = $obj->start($args);
+        like( $hash->{message}, qr/success/, 'success init' );
+    }
+    {
+        my $args = {
+            method => 'insert',
+            params => {
+                csv   => 'user-test.csv',
+                table => 'user',
+                cols  => [
+                    'loginid',    'password', 'approved', 'deleted',
+                    'created_ts', 'modified_ts',
+                ]
+            }
+        };
+        my $hash = $obj->start($args);
+        like( $hash->{message}, qr/success/, 'success insert' );
+    }
+    {
+        my $args = { method => 'dump', };
+        my $hash = $obj->start($args);
+        like( $hash->{message}, qr/success/, 'success dump' );
+    }
 
-    # my $error_msg = $build->start();
-    # my @keys      = keys %{$error_msg};
-    # my $key       = shift @keys;
-    # ok( $key eq 'error', 'error message' );
-    # for my $method ( 'init', 'insert', 'dump' ) {
-    #     my $output = $build->start( { method => $method } );
-    #     like( $output->{message}, qr/success/, $output->{message} );
-    # }
-    # {
-    #     # db ファイル削除して新しくできたもので検索テスト
-    #     my $db = $build->db_file_path;
-    #     unlink $db;
-    #     ok( !-e $db, 'db file' );
-    #     my $output = $build->start( { method => 'restore' } );
-    #     like( $output->{message}, qr/success/, $output->{message} );
-    # }
+    {
+        my $db = $obj->db_file_path;
+        unlink $db;
+        ok( !-e $db, "delete db file" );
+        my $args = { method => 'restore', };
+        my $hash = $obj->start($args);
+        like( $hash->{message}, qr/success/, 'success restore' );
+    }
 };
 
 subtest 'User' => sub {

@@ -17,6 +17,7 @@ Perl
 echo '5.14.4' > .perl-version
 echo "requires 'DBD::SQLite', '==1.54';" >> cpanfile
 echo "requires 'Test::Trap';" >> cpanfile
+echo "requires 'Text::CSV', '2.01';" >> cpanfile
 ```
 
 Module
