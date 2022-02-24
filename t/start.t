@@ -96,7 +96,6 @@ subtest 'Framework Build' => sub {
         my $hash = $obj->start($args);
         like( $hash->{message}, qr/success/, 'success dump' );
     }
-
     {
         my $db = $obj->db_file_path;
         unlink $db;
