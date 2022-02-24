@@ -32,15 +32,13 @@ chmod +x cpanm
 
 ### CLI
 
-`beauth <resource> <method> [--params=<JSON>]`
-
 ```text
-<resource>  Specify each resource name
-<method>    Specify each method name
---params    Json format with reference to request parameters
-```
+beauth <resource> <method> [--params=<JSON>]
 
-```text
+  <resource>  Specify each resource name
+  <method>    Specify each method name
+  --params    Json format with reference to request parameters
+
 Specify the resource name as the first argument
 Specify the method name as the second argument
 Format command line interface options in json format
@@ -52,9 +50,9 @@ Format command line interface options in json format
 
 ### HTTP
 
-`POST https://auth-api.becom.co.jp/`
-
 ```text
+POST https://auth-api.becom.co.jp/
+
 http request requires apikey
 All specifications should be included in the post request parameters
 See Examples in each document for usage

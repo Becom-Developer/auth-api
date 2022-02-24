@@ -4,20 +4,19 @@
 
 CLI
 
-`beauth user <method> [--params=<JSON>]`
-
 ```text
-<method>    Specify each method name
---params    Json format with reference to request parameters
+beauth user <method> [--params=<JSON>]
+
+    <method>    Specify each method name
+    --params    Json format with reference to request parameters
 ```
 
 HTTP
 
-`POST https://auth-api.becom.co.jp/`
-
 ```text
-See example for usage
+POST https://auth-api.becom.co.jp/
 
+See example for usage
 使用法は Example を参照
 ```
 
