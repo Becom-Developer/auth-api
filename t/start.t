@@ -32,6 +32,7 @@ subtest 'Class and Method' => sub {
     can_ok( new_ok('Beauth::Render'), (@methods) );
     can_ok( new_ok('Beauth::Error'),  (@methods) );
     can_ok( new_ok('Beauth::Build'),  (@methods) );
+    can_ok( new_ok('Beauth::User'),   (@methods) );
 };
 
 subtest 'Framework Render' => sub {
@@ -107,65 +108,68 @@ subtest 'Framework Build' => sub {
 };
 
 subtest 'User' => sub {
-    ok(1);
-
-    # my $build = new_ok('Mhj::Build');
-    # $build->run( { method => 'init' } );
-    # my $user      = new_ok('Mhj::User');
-    # my $error_msg = $user->run();
-    # my @keys      = keys %{$error_msg};
-    # my $key       = shift @keys;
-    # ok( $key eq 'error', 'error message' );
-    # my $insert_q = +{
-    #     path   => "user",
-    #     method => "insert",
-    #     params => +{
-    #         loginid  => 'info@becom.co.jp',
-    #         password => "info"
-    #     }
-    # };
-    # my $insert = $user->run($insert_q);
-    # ok( $insert->{loginid} eq $insert_q->{params}->{loginid},   'insert' );
-    # ok( $insert->{password} eq $insert_q->{params}->{password}, 'insert' );
-
-    # my $get_q = +{
-    #     path   => "user",
-    #     method => "get",
-    #     params => +{ loginid => $insert->{loginid}, }
-    # };
-    # my $get = $user->run($get_q);
-    # ok( $get->{loginid} eq $insert->{loginid},   'get' );
-    # ok( $get->{password} eq $insert->{password}, 'get' );
-
-    # my $list_q = +{
-    #     path   => "user",
-    #     method => "list",
-    #     params => +{}
-    # };
-    # my $list = $user->run($list_q);
-    # ok( $list->[0]->{loginid} eq $get->{loginid},   'list' );
-    # ok( $list->[0]->{password} eq $get->{password}, 'list' );
-
-    # my $update_q = +{
-    #     path   => "user",
-    #     method => "update",
-    #     params => +{
-    #         id       => $insert->{id},
-    #         loginid  => 'info2@becom.co.jp',
-    #         password => "info2"
-    #     }
-    # };
-    # my $update = $user->run($update_q);
-    # ok( $update->{loginid} eq $update_q->{params}->{loginid},   'update' );
-    # ok( $update->{password} eq $update_q->{params}->{password}, 'update' );
-
-    # my $delete_q = +{
-    #     path   => "user",
-    #     method => "delete",
-    #     params => +{ id => $insert->{id}, }
-    # };
-    # my $delete = $user->run($delete_q);
-    # ok( !%{$delete}, 'delete' );
+    {
+        my $obj  = new_ok('Beauth::Build');
+        my $args = { method => 'init' };
+        my $hash = $obj->start($args);
+        like( $hash->{message}, qr/success/, 'success init' );
+    }
+    my $obj  = new_ok('Beauth::User');
+    my $hash = $obj->run();
+    my @keys = keys %{$hash};
+    my $key  = shift @keys;
+    ok( $key eq 'error', 'error message' );
+    my $sample = +{ loginid => 'info@becom.co.jp', password => "info" };
+    {
+        my $q    = +{ method => "insert", params => $sample, };
+        my $hash = $obj->run($q);
+        ok( $hash->{loginid} eq $q->{params}->{loginid},   'insert' );
+        ok( $hash->{password} eq $q->{params}->{password}, 'insert' );
+    }
+    {
+        my $q =
+          +{ method => "get", params => +{ loginid => $sample->{loginid}, } };
+        my $hash = $obj->run($q);
+        ok( $hash->{loginid} eq $sample->{loginid},   'get' );
+        ok( $hash->{password} eq $sample->{password}, 'get' );
+    }
+    {
+        my $q    = +{ method => "list", params => +{} };
+        my $rows = $obj->run($q);
+        ok( $rows->[0]->{loginid} eq $sample->{loginid},   'list' );
+        ok( $rows->[0]->{password} eq $sample->{password}, 'list' );
+    }
+    {
+        my $q =
+          { method => "get", params => { loginid => $sample->{loginid} } };
+        my $id = $obj->run($q)->{id};
+        $q->{method} = 'update';
+        $q->{params} = +{
+            id       => $id,
+            loginid  => 'info2@becom.co.jp',
+            password => 'info2',
+        };
+        my $hash = $obj->run($q);
+        ok( $hash->{loginid} eq $q->{params}->{loginid},   'update' );
+        ok( $hash->{password} eq $q->{params}->{password}, 'update' );
+        $q->{params}->{loginid}  = $sample->{loginid};
+        $q->{params}->{password} = $sample->{password};
+        my $loginid = $obj->run($q)->{loginid};
+        ok( $loginid eq $sample->{loginid}, 'update' );
+    }
+    {
+        my $q =
+          { method => "get", params => { loginid => $sample->{loginid} } };
+        my $id = $obj->run($q)->{id};
+        $q->{method} = 'delete';
+        $q->{params} = +{ id => $id, };
+        my $hash = $obj->run($q);
+        ok( !%{$hash}, 'delete' );
+        $q->{method} = 'get';
+        $q->{params} = { loginid => $sample->{loginid} };
+        my $error = $obj->run($q)->{error};
+        ok( $error->{message}, 'delete' );
+    }
 };
 
 done_testing;

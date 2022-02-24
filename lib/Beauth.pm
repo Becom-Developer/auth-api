@@ -10,11 +10,13 @@ use Time::Piece;
 use Data::Dumper;
 use Beauth::Build;
 use Beauth::Error;
+use Beauth::User;
 
 # class
 sub new   { bless {}, shift; }
 sub build { Beauth::Build->new }
 sub error { Beauth::Error->new }
+sub user  { Beauth::User->new }
 
 # helper
 sub time_stamp { localtime->datetime( 'T' => ' ' ); }
@@ -29,6 +31,39 @@ sub dump {
     my ( $self, @args ) = @_;
     my $d = Data::Dumper->new( [ shift @args ] );
     return $d->Dump;
+}
+
+# $self->single($table, \@cols, \%params);
+sub single {
+    my ( $self, $table, $cols, $params ) = @_;
+    my $sql_q = [];
+    for my $col ( @{$cols} ) {
+        push @{$sql_q}, qq{$col = "$params->{$col}"};
+    }
+    push @{$sql_q}, qq{deleted = 0};
+    my $sql_clause = join " AND ", @{$sql_q};
+    my $sql        = qq{SELECT * FROM $table WHERE $sql_clause};
+    my $dbh        = $self->build_dbh;
+    return $dbh->selectrow_hashref($sql);
+}
+
+# $self->rows($table, \@cols, \%params);
+sub rows {
+    my ( $self, $table, $cols, $params ) = @_;
+    my $sql_q = [];
+    for my $col ( @{$cols} ) {
+        push @{$sql_q}, qq{$col = "$params->{$col}"};
+    }
+    push @{$sql_q}, qq{deleted = 0};
+    my $sql_clause = join " AND ", @{$sql_q};
+    my $sql        = qq{SELECT * FROM $table WHERE $sql_clause};
+    my $dbh        = $self->build_dbh;
+    my $hash       = $dbh->selectall_hashref( $sql, 'id' );
+    my $arrey_ref  = [];
+    for my $key ( sort keys %{$hash} ) {
+        push @{$arrey_ref}, $hash->{$key};
+    }
+    return $arrey_ref;
 }
 
 # file
