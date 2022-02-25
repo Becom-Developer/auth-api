@@ -21,6 +21,54 @@ sub run {
         "Method not specified correctly: $options->{method}");
 }
 
+sub _loggedin {
+    my ( $self, @args ) = @_;
+    my $row = shift @args;
+    return 1 if $row->{loggedin};
+    return 0;
+}
+
+sub _exists_history {
+    my ( $self, @args ) = @_;
+    my $loginid = shift @args;
+    my $params  = { loginid => $loginid };
+    my $rows    = $self->rows( 'login', ['loginid'], $params );
+    return $rows if $rows;
+    return;
+}
+
+sub _update_login {
+    my ( $self, @args ) = @_;
+    my $row        = shift @args;
+    my $table      = 'login';
+    my $dt         = $self->time_stamp;
+    my $set_cols   = [ 'loggedin', 'sid' ];
+    my $where_cols = ['id'];
+    my $set_q      = [];
+    my $expiry_ts  = $self->ts_10_days_later;
+    my $loginid    = $row->{loginid};
+    my $sid        = encode_base64( "$loginid:$expiry_ts", '' );
+    my $set_params = { loggedin => 1, sid => $sid };
+
+    for my $col ( @{$set_cols} ) {
+        push @{$set_q}, qq{$col = "$set_params->{$col}"};
+    }
+    push @{$set_q}, qq{modified_ts = "$dt"};
+    my $set_clause = join ",", @{$set_q};
+    my $where_q    = [];
+    for my $col ( @{$where_cols} ) {
+        push @{$where_q}, qq{$col = "$row->{$col}"};
+    }
+    push @{$where_q}, qq{deleted = "0"};
+    my $where_clause = join " AND ", @{$where_q};
+    my $sql          = qq{UPDATE $table SET $set_clause WHERE $where_clause};
+    my $dbh          = $self->build_dbh;
+    my $sth          = $dbh->prepare($sql);
+    $sth->execute() or die $dbh->errstr;
+    my $update = $self->single( $table, ['id'], { id => $row->{id} } );
+    return $update;
+}
+
 sub _start {
     my ( $self, @args ) = @_;
     my $options = shift @args;
@@ -28,6 +76,18 @@ sub _start {
     my $loginid = $params->{loginid};
     my $row     = $self->single( 'user', [ 'loginid', 'password' ], $params );
     return $self->error->commit("not exist user: $loginid") if !$row;
+
+    # 過去のログイン履歴
+    my $rows = $self->_exists_history($loginid);
+    if ( @{$rows} ) {
+        my $row = shift @{$rows};
+        return $self->error->commit("You are logged in: $loginid")
+          if $self->_loggedin($row);
+
+        # 履歴がある場合はアップデートでおこなう
+        my $update = $self->_update_login($row);
+        return { sid => $update->{sid} };
+    }
     my $dbh = $self->build_dbh;
     my $col =
       q{sid, loginid, loggedin, expiry_ts, deleted, created_ts, modified_ts};

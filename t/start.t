@@ -215,7 +215,8 @@ subtest 'Login' => sub {
     ok( $key eq 'error', 'error message' );
     my $sample = +{ loginid => 'info@becom.co.jp', password => "info" };
     new_ok('Beauth::User')->run( { method => "insert", params => $sample, } );
-    subtest 'start -> status -> end -> status' => sub {
+    subtest 'start to end' => sub {
+        ok(1);
         my $hash = $obj->run( { method => "start", params => $sample, } );
         my $sid  = decode_base64( $hash->{sid} );
         like( $sid, qr/$sample->{loginid}/, 'success sid' );
@@ -235,6 +236,20 @@ subtest 'Login' => sub {
         )->{status};
         like( $logout_status, qr/400/, 'success logout' );
     };
+    subtest 'Duplicate login' => sub {
+        my $sid = $obj->run( { method => "start", params => $sample, } )->{sid};
+        my $hash = $obj->run( { method => "start", params => $sample, } );
+        ok( $hash->{error}->{message}, "error login" );
+        $obj->run( { method => "end", params => { sid => $sid } } );
+    };
+
+    # subtest 'Have a login history' => sub {
+    #     $obj->run( { method => "start", params => $sample, } );
+    #     my $hash = $obj->run( { method => "start", params => $sample, } );
+    #     ok( $hash->{error}->{message}, "error login" );
+    #     warn $obj->dump($hash);
+    # };
+
 };
 
 done_testing;
