@@ -47,7 +47,7 @@ Request parameters
 Response parameters
 
 ```json
-{ "sid": "sessionnumber" }
+{ "sid": "aW5mb0BiZWNvbS5jby5qcDoyMDIyLTAzLTA3IDE0OjI1OjA0" }
 ```
 
 HTTP
@@ -73,7 +73,7 @@ beauth login start --params='{}'
 Request parameters
 
 ```json
-{ "sid": "sessionnumber" }
+{ "sid": "aW5mb0BiZWNvbS5jby5qcDoyMDIyLTAzLTA3IDE0OjI1OjA0" }
 ```
 
 Response parameters
@@ -105,14 +105,14 @@ beauth login end --params='{}'
 Request parameters
 
 ```json
-{ "sid": "sessionnumber" }
+{ "sid": "aW5mb0BiZWNvbS5jby5qcDoyMDIyLTAzLTA3IDE0OjI1OjA0" }
 ```
 
 Response parameters
 
 ```json
 {
-  "sid": "sessionnumber",
+  "sid": "aW5mb0BiZWNvbS5jby5qcDoyMDIyLTAzLTA3IDE0OjI1OjA0",
   "status": 200
 }
 ```
@@ -140,13 +140,13 @@ beauth login status --params='{}'
 Request parameters
 
 ```json
-{ "sid": "sessionnumber" }
+{ "sid": "aW5mb0BiZWNvbS5jby5qcDoyMDIyLTAzLTA3IDE0OjI1OjA0" }
 ```
 
 Response parameters
 
 ```json
-{ "sid": "sessionnumberss" }
+{ "sid": "aW5mb0BiZWNvbS5jby5qcDoyMDIyLTAzLTA3IDE0OjI1OjA0ss" }
 ```
 
 HTTP

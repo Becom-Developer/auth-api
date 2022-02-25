@@ -7,19 +7,28 @@ use JSON::PP;
 use File::Spec;
 use DBI;
 use Time::Piece;
+use Time::Seconds;
 use Data::Dumper;
 use Beauth::Build;
 use Beauth::Error;
 use Beauth::User;
+use Beauth::Login;
 
 # class
 sub new   { bless {}, shift; }
 sub build { Beauth::Build->new }
 sub error { Beauth::Error->new }
 sub user  { Beauth::User->new }
+sub login { Beauth::Login->new }
 
 # helper
 sub time_stamp { localtime->datetime( 'T' => ' ' ); }
+
+sub ts_10_days_later {
+    my $t = localtime;
+    $t += ( ONE_DAY * 10 );
+    return $t->datetime( 'T' => ' ' );
+}
 
 sub is_test_mode {
     return if !$ENV{"BEAUTH_MODE"};
