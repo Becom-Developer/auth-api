@@ -75,6 +75,66 @@ sub rows {
     return $arrey_ref;
 }
 
+sub db_insert {
+    my ( $self, @args ) = @_;
+    my ( $table, $cols, $data ) = @args;
+    my $col    = join ",", @{$cols};
+    my $values = join ",", map { '?' } @{$cols};
+    my $sql    = qq{INSERT INTO $table ($col) VALUES ($values)};
+    my $dbh    = $self->build_dbh;
+    my $sth    = $dbh->prepare($sql);
+    $sth->execute( @{$data} ) or die $dbh->errstr;
+    my $id     = $dbh->last_insert_id( undef, undef, undef, undef );
+    my $create = $self->single( $table, ['id'], { id => $id } );
+    return $create;
+}
+
+sub db_update {
+    my ( $self, @args ) = @_;
+    my $update_row = shift @args;
+    my $set_args   = shift @args;
+    my $where_args = shift @args;
+
+    my $table        = $update_row->{table};
+    my $update_id    = $update_row->{row}->{id};
+    my $set_clause   = $self->set_clause( @{$set_args} );
+    my $where_clause = $self->where_clause( @{$where_args} );
+
+    my $sql = qq{UPDATE $table SET $set_clause WHERE $where_clause};
+    my $dbh = $self->build_dbh;
+    my $sth = $dbh->prepare($sql);
+    $sth->execute() or die $dbh->errstr;
+    my $update = $self->single( $table, ['id'], { id => $update_id } );
+    return $update;
+}
+
+sub set_clause {
+    my ( $self, @args ) = @_;
+    my $cols   = shift @args;
+    my $params = shift @args;
+    my $dt     = $self->time_stamp;
+    my $set_q  = [];
+    for my $col ( @{$cols} ) {
+        push @{$set_q}, qq{$col = "$params->{$col}"};
+    }
+    push @{$set_q}, qq{modified_ts = "$dt"};
+    my $set_clause = join ",", @{$set_q};
+    return $set_clause;
+}
+
+sub where_clause {
+    my ( $self, @args ) = @_;
+    my $cols    = shift @args;
+    my $params  = shift @args;
+    my $where_q = [];
+    for my $col ( @{$cols} ) {
+        push @{$where_q}, qq{$col = "$params->{$col}"};
+    }
+    push @{$where_q}, qq{deleted = "0"};
+    my $where_clause = join " AND ", @{$where_q};
+    return $where_clause;
+}
+
 # file
 sub home           { File::Spec->catfile( $FindBin::RealBin, '..' ); }
 sub homedb         { File::Spec->catfile( home(),            'db' ); }
