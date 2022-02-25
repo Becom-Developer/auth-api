@@ -1,0 +1,25 @@
+PRAGMA foreign_keys=OFF;
+BEGIN TRANSACTION;
+CREATE TABLE user (                                       -- ユーザー
+    `id`              INTEGER PRIMARY KEY AUTOINCREMENT,  -- ID (例: 5)
+    `loginid`         TEXT,                               -- ログインID名 (例: 'info@gmail.com')
+    `password`        TEXT,                               -- ログインパスワード (例: 'info')
+    `approved`        INTEGER,                            -- 承認フラグ (例: 0: 承認していない, 1: 承認済み)
+    `deleted`         INTEGER,                            -- 削除フラグ (例: 0: 削除していない, 1: 削除済み)
+    `created_ts`      TEXT,                               -- 登録日時 (例: '2022-01-23 23:49:12')
+    `modified_ts`     TEXT                                -- 修正日時 (例: '2022-01-23 23:49:12')
+);
+INSERT INTO user VALUES(1,'becom.root@gmail.com','root',1,0,'2022-02-25 10:28:15','2022-02-25 10:28:15');
+INSERT INTO user VALUES(2,'becom.sudo@gmail.com','sudo',1,0,'2022-02-25 10:28:15','2022-02-25 10:28:15');
+INSERT INTO user VALUES(3,'becom.admin@gmail.com','admin',1,0,'2022-02-25 10:28:15','2022-02-25 10:28:15');
+INSERT INTO user VALUES(4,'becom.general@gmail.com','general',1,0,'2022-02-25 10:28:15','2022-02-25 10:28:15');
+INSERT INTO user VALUES(5,'becom.guest@gmail.com','guest',1,0,'2022-02-25 10:28:15','2022-02-25 10:28:15');
+INSERT INTO user VALUES(6,'becom.osomatu@gmail.com','osomatu',1,0,'2022-02-25 10:28:15','2022-02-25 10:28:15');
+INSERT INTO user VALUES(7,'becom.karamatu@gmail.com','karamatu',1,0,'2022-02-25 10:28:15','2022-02-25 10:28:15');
+INSERT INTO user VALUES(8,'becom.tyoromatu@gmail.com','tyoromatu',1,0,'2022-02-25 10:28:15','2022-02-25 10:28:15');
+INSERT INTO user VALUES(9,'becom.itimatu@gmail.com','itimatu',1,0,'2022-02-25 10:28:15','2022-02-25 10:28:15');
+INSERT INTO user VALUES(10,'becom.zyuusimatu@gmail.com','zyuusimatu',1,0,'2022-02-25 10:28:15','2022-02-25 10:28:15');
+INSERT INTO user VALUES(11,'becom.todomatu@gmail.com','todomatu',1,1,'2022-02-25 10:28:15','2022-02-25 10:28:15');
+DELETE FROM sqlite_sequence;
+INSERT INTO sqlite_sequence VALUES('user',11);
+COMMIT;

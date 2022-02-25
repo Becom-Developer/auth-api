@@ -67,6 +67,7 @@ http リクエストには apikey の指定が必要
 See here for details: [doc/](doc/)
 
 ```text
+build     Environment
 user      Registered user
 login     Login system
 session   Issuing unique values
