@@ -3,41 +3,45 @@ use parent 'Beauth';
 use strict;
 use warnings;
 use utf8;
-use MIME::Base64;
 
 sub run {
     my ( $self, @args ) = @_;
     my $options = shift @args;
     return $self->error->commit("No arguments") if !$options;
-    return $self->_start($options)  if $options->{method} eq 'start';
-    return $self->_status($options) if $options->{method} eq 'status';
-    return $self->_end($options)    if $options->{method} eq 'end';
-
-    # return $self->_insert($options) if $options->{method} eq 'insert';
-    # return $self->_update($options) if $options->{method} eq 'update';
-    # return $self->_delete($options) if $options->{method} eq 'delete';
-    # return $self->_list($options)   if $options->{method} eq 'list';
+    return $self->_start($options)   if $options->{method} eq 'start';
+    return $self->_status($options)  if $options->{method} eq 'status';
+    return $self->_end($options)     if $options->{method} eq 'end';
+    return $self->_refresh($options) if $options->{method} eq 'refresh';
     return $self->error->commit(
         "Method not specified correctly: $options->{method}");
+}
+
+sub _refresh {
+    my ( $self, @args ) = @_;
+    my $options = shift @args;
+    my $params  = $options->{params};
+    my $sid     = $params->{sid};
+    $params->{loggedin} = 1;
+    my $row = $self->single( 'login', [ 'sid', 'loggedin' ], $params );
+    return $self->error->commit("not exist sid: $sid") if !$row;
+    my $update = $self->_update_login($row);
+    return { sid => $update->{sid} };
 }
 
 sub _exists_history {
     my ( $self, @args ) = @_;
     my $loginid = shift @args;
-    my $params  = { loginid => $loginid };
-    return $self->single( 'login', ['loginid'], $params );
+    return $self->single( 'login', ['loginid'], { loginid => $loginid } );
 }
 
 sub _update_login {
     my ( $self, @args ) = @_;
     my $row        = shift @args;
-    my $expiry_ts  = $self->ts_10_days_later;
     my $loginid    = $row->{loginid};
-    my $sid        = encode_base64( "$loginid:$expiry_ts", '' );
+    my $sid        = $self->session_id($loginid);
     my $update_row = { table => 'login', row => $row };
     my $set_args   = [ [ 'loggedin', 'sid' ], { loggedin => 1, sid => $sid } ];
-    my $where_args = [ ['id'], { id => $row->{id} } ];
-    my $update     = $self->db_update( $update_row, $set_args, $where_args );
+    my $update     = $self->db_update( $update_row, $set_args );
     return $update;
 }
 
@@ -59,14 +63,10 @@ sub _start {
         return { sid => $update->{sid} };
     }
     my $expiry_ts = $self->ts_10_days_later;
-    my $dt        = $self->time_stamp;
-    my $sid       = encode_base64( "$loginid:$expiry_ts", '' );
-    my $cols      = [
-        'sid',     'loginid',    'loggedin', 'expiry_ts',
-        'deleted', 'created_ts', 'modified_ts',
-    ];
-    my $data   = [ $sid, $loginid, 1, $expiry_ts, 0, $dt, $dt ];
-    my $create = $self->db_insert( 'login', $cols, $data );
+    my $sid       = $self->session_id($loginid);
+    my $cols      = [ 'sid', 'loginid', 'loggedin', 'expiry_ts', ];
+    my $data      = [ $sid, $loginid, 1, $expiry_ts, ];
+    my $create    = $self->db_insert( 'login', $cols, $data );
     return { sid => $create->{sid} };
 }
 
@@ -74,9 +74,8 @@ sub _status {
     my ( $self, @args ) = @_;
     my $options = shift @args;
     my $params  = $options->{params};
-    my $table   = 'login';
-    my $sid     = $params->{sid};
-    my $row     = $self->single( $table, [ 'sid', 'loggedin' ], $params );
+    $params->{loggedin} = 1;
+    my $row = $self->single( 'login', [ 'sid', 'loggedin' ], $params );
     return { status => 400 } if !$row;
     return { status => 200, sid => $row->{sid} };
 }
@@ -90,8 +89,7 @@ sub _end {
     return $self->error->commit("not exist sid: $sid") if !$row;
     my $update_row = { table => 'login', row => $row };
     my $set_args   = [ ['loggedin'], { loggedin => 0 } ];
-    my $where_args = [ ['id'],       { id       => $row->{id} } ];
-    my $update     = $self->db_update( $update_row, $set_args, $where_args );
+    my $update     = $self->db_update( $update_row, $set_args );
     return {};
 }
 

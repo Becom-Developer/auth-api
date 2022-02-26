@@ -216,24 +216,17 @@ subtest 'Login' => sub {
     my $sample = +{ loginid => 'info@becom.co.jp', password => "info" };
     new_ok('Beauth::User')->run( { method => "insert", params => $sample, } );
     subtest 'start to end' => sub {
-        ok(1);
         my $hash = $obj->run( { method => "start", params => $sample, } );
         my $sid  = decode_base64( $hash->{sid} );
         like( $sid, qr/$sample->{loginid}/, 'success sid' );
-        my $status = $obj->run(
-            {
-                method => "status",
-                params => { sid => $hash->{sid}, loggedin => 1 }
-            }
-        )->{status};
+        my $status =
+          $obj->run( { method => "status", params => { sid => $hash->{sid} } } )
+          ->{status};
         like( $status, qr/200/, 'success login status' );
         $obj->run( { method => "end", params => { sid => $hash->{sid} } } );
-        my $logout_status = $obj->run(
-            {
-                method => "status",
-                params => { sid => $hash->{sid}, loggedin => 1 }
-            }
-        )->{status};
+        my $logout_status =
+          $obj->run( { method => "status", params => { sid => $hash->{sid} } } )
+          ->{status};
         like( $logout_status, qr/400/, 'success logout' );
     };
     subtest 'Duplicate login' => sub {
@@ -242,14 +235,27 @@ subtest 'Login' => sub {
         ok( $hash->{error}->{message}, "error login" );
         $obj->run( { method => "end", params => { sid => $sid } } );
     };
-
-    # subtest 'Have a login history' => sub {
-    #     $obj->run( { method => "start", params => $sample, } );
-    #     my $hash = $obj->run( { method => "start", params => $sample, } );
-    #     ok( $hash->{error}->{message}, "error login" );
-    #     warn $obj->dump($hash);
-    # };
-
+    subtest 'Have a login history' => sub {
+        my $args = { method => "start", params => $sample, };
+        my $sid1 = $obj->run($args)->{sid};
+        ok( $sid1, "ok login" );
+        $obj->run( { method => "end", params => { sid => $sid1 } } );
+        my $sid2 = $obj->run($args)->{sid};
+        ok( $sid2, "ok login" );
+        $obj->run( { method => "end", params => { sid => $sid2 } } );
+        isnt( $sid1, $sid2, "Not duplicate" );
+    };
+    subtest 'refresh' => sub {
+        my $args = { method => "start", params => $sample, };
+        my $sid1 = $obj->run($args)->{sid};
+        ok( $sid1, "ok login" );
+        my $sid2 =
+          $obj->run( { method => "refresh", params => { sid => $sid1 }, } )
+          ->{sid};
+        ok( $sid2, "ok refresh" );
+        isnt( $sid1, $sid2, "Not duplicate" );
+        $obj->run( { method => "end", params => { sid => $sid2 } } );
+    };
 };
 
 done_testing;

@@ -9,6 +9,7 @@ use DBI;
 use Time::Piece;
 use Time::Seconds;
 use Data::Dumper;
+use MIME::Base64;
 use Beauth::Build;
 use Beauth::Error;
 use Beauth::User;
@@ -23,6 +24,18 @@ sub login { Beauth::Login->new }
 
 # helper
 sub time_stamp { localtime->datetime( 'T' => ' ' ); }
+
+sub session_id {
+    my ( $self, @args ) = @_;
+    my $loginid   = shift @args;
+    my $expiry_ts = $self->ts_10_days_later;
+
+    # 4桁の簡易的な乱数
+    my $rand = int rand(1000);
+    my $id   = sprintf '%04d', $rand;
+    my $sid  = encode_base64( "$loginid:$expiry_ts:$id", '' );
+    return $sid;
+}
 
 sub ts_10_days_later {
     my $t = localtime;
@@ -78,6 +91,9 @@ sub rows {
 sub db_insert {
     my ( $self, @args ) = @_;
     my ( $table, $cols, $data ) = @args;
+    my $dt = $self->time_stamp;
+    push @{$cols}, 'deleted', 'created_ts', 'modified_ts';
+    push @{$data}, 0,         $dt,          $dt;
     my $col    = join ",", @{$cols};
     my $values = join ",", map { '?' } @{$cols};
     my $sql    = qq{INSERT INTO $table ($col) VALUES ($values)};
@@ -91,29 +107,27 @@ sub db_insert {
 
 sub db_update {
     my ( $self, @args ) = @_;
-    my $update_row = shift @args;
-    my $set_args   = shift @args;
-    my $where_args = shift @args;
-
-    my $table        = $update_row->{table};
-    my $update_id    = $update_row->{row}->{id};
-    my $set_clause   = $self->set_clause( @{$set_args} );
+    my ( $update_row, $set_args, $where_args ) = @args;
+    my $table      = $update_row->{table};
+    my $update_id  = $update_row->{row}->{id};
+    my $set_clause = $self->set_clause( @{$set_args} );
+    if ( !$where_args ) {
+        $where_args = [ ['id'], $update_row->{row} ];
+    }
     my $where_clause = $self->where_clause( @{$where_args} );
-
-    my $sql = qq{UPDATE $table SET $set_clause WHERE $where_clause};
-    my $dbh = $self->build_dbh;
-    my $sth = $dbh->prepare($sql);
+    my $sql          = qq{UPDATE $table SET $set_clause WHERE $where_clause};
+    my $dbh          = $self->build_dbh;
+    my $sth          = $dbh->prepare($sql);
     $sth->execute() or die $dbh->errstr;
     my $update = $self->single( $table, ['id'], { id => $update_id } );
     return $update;
 }
 
 sub set_clause {
-    my ( $self, @args ) = @_;
-    my $cols   = shift @args;
-    my $params = shift @args;
-    my $dt     = $self->time_stamp;
-    my $set_q  = [];
+    my ( $self, @args )   = @_;
+    my ( $cols, $params ) = @args;
+    my $dt    = $self->time_stamp;
+    my $set_q = [];
     for my $col ( @{$cols} ) {
         push @{$set_q}, qq{$col = "$params->{$col}"};
     }
@@ -123,14 +137,12 @@ sub set_clause {
 }
 
 sub where_clause {
-    my ( $self, @args ) = @_;
-    my $cols    = shift @args;
-    my $params  = shift @args;
+    my ( $self, @args )   = @_;
+    my ( $cols, $params ) = @args;
     my $where_q = [];
     for my $col ( @{$cols} ) {
         push @{$where_q}, qq{$col = "$params->{$col}"};
     }
-    push @{$where_q}, qq{deleted = "0"};
     my $where_clause = join " AND ", @{$where_q};
     return $where_clause;
 }

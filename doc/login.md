@@ -146,7 +146,7 @@ Request parameters
 Response parameters
 
 ```json
-{ "sid": "aW5mb0BiZWNvbS5jby5qcDoyMDIyLTAzLTA3IDE0OjI1OjA0ss" }
+{ "sid": "aW5mb0BiZWNvbS5jby5qcDoyMDIyLTAzLTA4IDEwOjM3OjU2OjAyNDM" }
 ```
 
 HTTP

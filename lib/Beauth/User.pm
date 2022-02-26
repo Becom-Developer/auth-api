@@ -31,15 +31,12 @@ sub _delete {
     my $options = shift @args;
     my $params  = $options->{params};
     my $id      = $params->{id};
-    my $dt      = $self->time_stamp;
     my $table   = 'user';
     my $row     = $self->single( $table, ['id'], $params );
     return $self->error->commit("not exist $table id: $id") if !$row;
-    my $set_clause = qq{deleted = 1,modified_ts = "$dt"};
-    my $sql        = qq{UPDATE $table SET $set_clause WHERE id = $id};
-    my $dbh        = $self->build_dbh;
-    my $sth        = $dbh->prepare($sql);
-    $sth->execute() or die $dbh->errstr;
+    my $update_row = { table => $table, row => $row };
+    my $set_args   = [ ['deleted'], { deleted => 1 } ];
+    my $update     = $self->db_update( $update_row, $set_args );
     return {};
 }
 
@@ -48,30 +45,11 @@ sub _update {
     my $options = shift @args;
     my $params  = $options->{params};
     my $table   = 'user';
-    my $dt      = $self->time_stamp;
     my $row     = $self->single( $table, ['id'], $params );
     return $self->error->commit("not exist $table id: $params->{id}") if !$row;
-    my $set_cols   = [ 'loginid', 'password' ];
-    my $where_cols = ['id'];
-    my $set_q      = [];
-
-    for my $col ( @{$set_cols} ) {
-        push @{$set_q}, qq{$col = "$params->{$col}"};
-    }
-    push @{$set_q}, qq{modified_ts = "$dt"};
-    my $set_clause = join ",", @{$set_q};
-
-    my $where_q = [];
-    for my $col ( @{$where_cols} ) {
-        push @{$where_q}, qq{$col = "$params->{$col}"};
-    }
-    push @{$where_q}, qq{deleted = 0};
-    my $where_clause = join " AND ", @{$where_q};
-    my $sql          = qq{UPDATE $table SET $set_clause WHERE $where_clause};
-    my $dbh          = $self->build_dbh;
-    my $sth          = $dbh->prepare($sql);
-    $sth->execute() or die $dbh->errstr;
-    my $update = $self->single( $table, ['id'], { id => $params->{id} } );
+    my $update_row = { table => $table, row => $row };
+    my $set_args   = [ [ 'loginid', 'password' ], $params ];
+    my $update     = $self->db_update( $update_row, $set_args );
     return $update;
 }
 
@@ -82,18 +60,11 @@ sub _insert {
     my $table    = 'user';
     my $loginid  = $params->{loginid};
     my $password = $params->{password};
-    my $dt       = $self->time_stamp;
     my $row      = $self->single( $table, ['loginid'], $params );
     return $self->error->commit("exist $table: $loginid") if $row;
-    my $dbh = $self->build_dbh;
-    my $col = q{loginid, password, approved, deleted, created_ts, modified_ts};
-    my $values = q{?, ?, ?, ?, ?, ?};
-    my @data   = ( $loginid, $password, 1, 0, $dt, $dt );
-    my $sql    = qq{INSERT INTO $table ($col) VALUES ($values)};
-    my $sth    = $dbh->prepare($sql);
-    $sth->execute(@data) or die $dbh->errstr;
-    my $id     = $dbh->last_insert_id( undef, undef, undef, undef );
-    my $create = $self->single( $table, ['id'], { id => $id } );
+    my $cols   = [ 'loginid', 'password', 'approved' ];
+    my $data   = [ $loginid, $password, 1 ];
+    my $create = $self->db_insert( $table, $cols, $data );
     return $create;
 }
 
