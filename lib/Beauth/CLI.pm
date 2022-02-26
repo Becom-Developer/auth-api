@@ -33,6 +33,10 @@ sub run {
         $self->render->all_items_json( $self->user->run($opt) );
         return;
     }
+    if ( $opt->{resource} eq 'login' ) {
+        $self->render->all_items_json( $self->login->run($opt) );
+        return;
+    }
     return $self->error->output(
         "Resources and methods are not specified correctly");
 }

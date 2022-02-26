@@ -8,6 +8,7 @@ use Test::Trap qw/:die :output(systemsafe)/;
 use Encode qw(encode decode);
 use JSON::PP;
 use File::Spec;
+use MIME::Base64;
 use Beauth;
 use Beauth::Render;
 use Beauth::CLI;
@@ -34,6 +35,7 @@ subtest 'Class and Method' => sub {
     can_ok( new_ok('Beauth::Build'),  (@methods) );
     can_ok( new_ok('Beauth::User'),   (@methods) );
     can_ok( new_ok('Beauth::CLI'),    (@methods) );
+    can_ok( new_ok('Beauth::Login'),  (@methods) );
 };
 
 subtest 'Framework Render' => sub {
@@ -68,11 +70,9 @@ subtest 'Framework Error' => sub {
 };
 
 subtest 'Framework Build' => sub {
-    my $obj  = new_ok('Beauth::Build');
-    my $hash = $obj->start();
-    my @keys = keys %{$hash};
-    my $key  = shift @keys;
-    ok( $key eq 'error', 'error message' );
+    my $obj = new_ok('Beauth::Build');
+    my $msg = $obj->start()->{error}->{message};
+    ok( $msg, 'error message' );
     subtest 'init' => sub {
         my $hash = $obj->start( { method => 'init' } );
         like( $hash->{message}, qr/success/, 'success init' );
@@ -129,16 +129,10 @@ subtest 'Script' => sub {
 };
 
 subtest 'User' => sub {
-    {
-        my $obj  = new_ok('Beauth::Build');
-        my $hash = $obj->start( { method => 'init' } );
-        like( $hash->{message}, qr/success/, 'success init' );
-    }
-    my $obj  = new_ok('Beauth::User');
-    my $hash = $obj->run();
-    my @keys = keys %{$hash};
-    my $key  = shift @keys;
-    ok( $key eq 'error', 'error message' );
+    new_ok('Beauth::Build')->start( { method => 'init' } );
+    my $obj = new_ok('Beauth::User');
+    my $msg = $obj->run()->{error}->{message};
+    ok( $msg, 'error message' );
     my $sample = +{ loginid => 'info@becom.co.jp', password => "info" };
     subtest 'insert' => sub {
         my $q    = +{ method => "insert", params => $sample, };
@@ -197,6 +191,69 @@ subtest 'User' => sub {
         trap { system "$script user insert --params='$bytes'" };
         my $chars = decode_json( $trap->stdout );
         like( $chars->{loginid}, qr/$sample->{loginid}/, 'success insert' );
+    };
+};
+
+subtest 'Login' => sub {
+    new_ok('Beauth::Build')->start( { method => 'init' } );
+    my $obj = new_ok('Beauth::Login');
+    my $msg = $obj->run()->{error}->{message};
+    ok( $msg, 'error message' );
+    my $sample = +{ loginid => 'info@becom.co.jp', password => "info" };
+    new_ok('Beauth::User')->run( { method => "insert", params => $sample, } );
+    subtest 'start to end' => sub {
+        my $hash = $obj->run( { method => "start", params => $sample, } );
+        my $sid  = decode_base64( $hash->{sid} );
+        like( $sid, qr/$sample->{loginid}/, 'success sid' );
+        my $status =
+          $obj->run( { method => "status", params => { sid => $hash->{sid} } } )
+          ->{status};
+        like( $status, qr/200/, 'success login status' );
+        $obj->run( { method => "end", params => { sid => $hash->{sid} } } );
+        my $logout_status =
+          $obj->run( { method => "status", params => { sid => $hash->{sid} } } )
+          ->{status};
+        like( $logout_status, qr/400/, 'success logout' );
+    };
+    subtest 'Duplicate login' => sub {
+        my $args    = { method => "start", params => $sample, };
+        my $sid     = $obj->run($args)->{sid};
+        my $message = $obj->run($args)->{error}->{message};
+        ok( $message, "error login" );
+        $obj->run( { method => "end", params => { sid => $sid } } );
+    };
+    subtest 'Have a login history' => sub {
+        my $args = { method => "start", params => $sample, };
+        my $sid1 = $obj->run($args)->{sid};
+        ok( $sid1, "ok login" );
+        $obj->run( { method => "end", params => { sid => $sid1 } } );
+        my $sid2 = $obj->run($args)->{sid};
+        ok( $sid2, "ok login" );
+        $obj->run( { method => "end", params => { sid => $sid2 } } );
+        isnt( $sid1, $sid2, "Not duplicate" );
+    };
+    subtest 'refresh' => sub {
+        my $start_args = { method => "start", params => $sample, };
+        my $sid1       = $obj->run($start_args)->{sid};
+        ok( $sid1, "ok login" );
+        my $refrsh_args = { method => "refresh", params => { sid => $sid1 } };
+        my $sid2        = $obj->run($refrsh_args)->{sid};
+        ok( $sid2, "ok refresh" );
+        isnt( $sid1, $sid2, "Not duplicate" );
+        $obj->run( { method => "end", params => { sid => $sid2 } } );
+    };
+    subtest 'script login' => sub {
+        my $script =
+          File::Spec->catfile( $FindBin::RealBin, '..', 'script', 'beauth' );
+        my $bytes = encode_json($sample);
+        trap { system "$script login start --params='$bytes'" };
+        my $chars = decode_json( $trap->stdout );
+        ok( $chars->{sid}, "ok login" );
+        my $bytes_sid = encode_json($chars);
+        trap { system "$script login end --params='$bytes_sid'" };
+        trap { system "$script login status --params='$bytes_sid'" };
+        my $chars_status = decode_json( $trap->stdout );
+        like( $chars_status->{status}, qr/400/, 'success logout' );
     };
 };
 

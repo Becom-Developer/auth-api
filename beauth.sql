@@ -8,3 +8,14 @@ CREATE TABLE user (                                       -- ユーザー
     `created_ts`      TEXT,                               -- 登録日時 (例: '2022-01-23 23:49:12')
     `modified_ts`     TEXT                                -- 修正日時 (例: '2022-01-23 23:49:12')
 );
+DROP TABLE IF EXISTS `login`;
+CREATE TABLE `login` (                                  -- ログイン
+    `id`            INTEGER PRIMARY KEY AUTOINCREMENT,  -- ID (例: 5)
+    `sid`           TEXT,                               -- セッションID名 (例: 'sessionnumber')
+    `loginid`       TEXT,                               -- ログインID名 (例: 'info@gmail.com')
+    `loggedin`      INTEGER,                            -- 認証フラグ (例: 0: ログインしていない, 1: ログインしている)
+    `expiry_ts`     TEXT,                               -- 有効期限 (例: '2022-02-23 23:49:12')
+    `deleted`       INTEGER,                            -- 削除フラグ (例: 0: 削除していない, 1: 削除済み)
+    `created_ts`    TEXT,                               -- 登録日時 (例: '2022-01-23 23:49:12')
+    `modified_ts`   TEXT                                -- 修正日時 (例: '2022-01-23 23:49:12')
+);
