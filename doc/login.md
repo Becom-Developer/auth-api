@@ -2,6 +2,12 @@
 
 ログインシステム
 
+```text
+ログインを通過したときに発行されるsidの値が必要
+httpリクエストの場合Cookieにsidが存在する場合はそちらを判定
+Cookieに存在しない場合はパラメーターのsidを判定に利用します
+```
+
 CLI
 
 ```text
@@ -23,6 +29,7 @@ See example for usage
 Method
 
 ```text
+signup      Creating a login user
 start       Start login
 end         Logout
 status      Check login status
@@ -30,6 +37,41 @@ refresh     Update session id
 ```
 
 ## Example
+
+### Login signup
+
+ログインユーザーの作成
+
+Request parameters
+
+```json
+{
+  "loginid": "info@becom.co.jp",
+  "password": "info"
+}
+```
+
+Response parameters
+
+```json
+{ "sid": "aW5mb0BiZWNvbS5jby5qcDoyMDIyLTAzLTA3IDE0OjI1OjA0" }
+```
+
+HTTP
+
+```zsh
+curl 'https://auth-api.becom.co.jp/' \
+--verbose \
+--header 'Content-Type: application/json' \
+--header 'accept: application/json' \
+--data-binary '{"resource":"login","method":"signup","apikey":"becom","params":{}}'
+```
+
+CLI
+
+```zsh
+beauth login signup --params='{}'
+```
 
 ### Login start
 
@@ -89,6 +131,7 @@ curl 'https://auth-api.becom.co.jp' \
 --verbose \
 --header 'Content-Type: application/json' \
 --header 'accept: application/json' \
+--header 'Cookie: sid=aW5mb0BiZWNvbS5jby5qcDoyMDIyLTAzLTA3IDE0OjI1OjA0' \
 --data-binary '{"resource":"login","method":"end","apikey":"becom","params":{}}'
 ```
 
@@ -124,6 +167,7 @@ curl 'https://auth-api.becom.co.jp' \
 --verbose \
 --header 'Content-Type: application/json' \
 --header 'accept: application/json' \
+--header 'Cookie: sid=aW5mb0BiZWNvbS5jby5qcDoyMDIyLTAzLTA3IDE0OjI1OjA0' \
 --data-binary '{"resource":"login","method":"status","apikey":"becom","params":{}}'
 ```
 
@@ -156,6 +200,7 @@ curl 'https://auth-api.becom.co.jp' \
 --verbose \
 --header 'Content-Type: application/json' \
 --header 'accept: application/json' \
+--header 'Cookie: sid=aW5mb0BiZWNvbS5jby5qcDoyMDIyLTAzLTA3IDE0OjI1OjA0' \
 --data-binary '{"resource":"login","method":"refresh","apikey":"becom","params":{}}'
 ```
 
