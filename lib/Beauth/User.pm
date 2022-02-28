@@ -89,9 +89,14 @@ sub _insert {
     my $password = $params->{password};
     my $row      = $self->single( $table, ['loginid'], $params );
     return $self->error->commit("exist $table: $loginid") if $row;
-    my $cols   = [ 'loginid', 'password', 'approved' ];
-    my $data   = [ $loginid, $password, 1 ];
-    my $create = $self->db_insert( $table, $cols, $data );
+    my $cols       = [ 'loginid', 'password', 'approved' ];
+    my $data       = [ $loginid, $password, 1 ];
+    my $create     = $self->db_insert( $table, $cols, $data );
+    my $limitation = $self->db_insert(
+        'limitation',
+        [ 'loginid', 'status' ],
+        [ $loginid,  $params->{limitation} || '200' ]
+    );
     return $create;
 }
 

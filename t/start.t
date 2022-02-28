@@ -168,6 +168,7 @@ subtest 'User' => sub {
         my $hash = $obj->run($q);
         ok( $hash->{loginid} eq $q->{params}->{loginid},   'insert' );
         ok( $hash->{password} eq $q->{params}->{password}, 'insert' );
+        ok( $obj->is_general( { loginid => $hash->{loginid} } ) );
     };
     subtest 'get' => sub {
         my $q =
@@ -205,7 +206,6 @@ subtest 'User' => sub {
         my $loginid = $obj->run($q)->{loginid};
         ok( $loginid eq $sample->{loginid}, 'update' );
     };
-
     subtest 'delete' => sub {
         my $q =
           { method => "get", params => { loginid => $sample->{loginid} } };

@@ -59,9 +59,18 @@ sub is_root {
     my ( $self, @args ) = @_;
     my $params = shift @args;
     my $row    = $self->single( 'limitation', ['loginid'], $params );
-    return if !$row;
-    return if $row->{status} ne '100';
-    return 1;
+    return   if !$row;
+    return 1 if $row->{status} eq '100';
+    return;
+}
+
+sub is_general {
+    my ( $self, @args ) = @_;
+    my $params = shift @args;
+    my $row    = $self->single( 'limitation', ['loginid'], $params );
+    return   if !$row;
+    return 1 if $row->{status} eq '200';
+    return;
 }
 
 sub sid_to_loginid {
