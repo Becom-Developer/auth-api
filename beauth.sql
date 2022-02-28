@@ -31,3 +31,12 @@ CREATE TABLE `webapi` (                                 -- apikey管理
     `created_ts`    TEXT,                               -- 登録日時 (例: '2022-01-23 23:49:12')
     `modified_ts`   TEXT                                -- 修正日時 (例: '2022-01-23 23:49:12')
 );
+DROP TABLE IF EXISTS `limitation`;
+CREATE TABLE `limitation` (                             -- 制限
+    `id`            INTEGER PRIMARY KEY AUTOINCREMENT,  -- ID (例: 5)
+    `loginid`       INTEGER,                            -- ログインID名 (例: 'info@gmail.com')
+    `status`        INTEGER,                            -- ステータス (例: 1**: 管理者, 2**: 一般)
+    `deleted`       INTEGER,                            -- 削除フラグ (例: 0: 削除していない, 1: 削除済み)
+    `created_ts`    TEXT,                               -- 登録日時 (例: '2022-01-23 23:49:12')
+    `modified_ts`   TEXT                                -- 修正日時 (例: '2022-01-23 23:49:12')
+);

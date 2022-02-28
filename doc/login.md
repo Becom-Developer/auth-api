@@ -47,7 +47,8 @@ Request parameters
 ```json
 {
   "loginid": "info@becom.co.jp",
-  "password": "info"
+  "password": "info",
+  "limitation": "100"
 }
 ```
 

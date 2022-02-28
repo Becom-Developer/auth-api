@@ -8,12 +8,40 @@ sub run {
     my ( $self, @args ) = @_;
     my $options = shift @args;
     return $self->error->commit("No arguments") if !$options;
+    return $self->_signup($options)  if $options->{method} eq 'signup';
     return $self->_start($options)   if $options->{method} eq 'start';
     return $self->_status($options)  if $options->{method} eq 'status';
     return $self->_end($options)     if $options->{method} eq 'end';
     return $self->_refresh($options) if $options->{method} eq 'refresh';
     return $self->error->commit(
         "Method not specified correctly: $options->{method}");
+}
+
+sub _signup {
+    my ( $self, @args ) = @_;
+    my $options  = shift @args;
+    my $params   = $options->{params};
+    my $table    = 'user';
+    my $loginid  = $params->{loginid};
+    my $password = $params->{password};
+    my $row      = $self->single( $table, ['loginid'], $params );
+    return $self->error->commit("exist $table: $loginid") if $row;
+    my $cols      = [ 'loginid', 'password', 'approved' ];
+    my $data      = [ $loginid, $password, 1 ];
+    my $create    = $self->db_insert( $table, $cols, $data );
+    my $expiry_ts = $self->ts_10_days_later;
+    my $sid       = $self->session_id($loginid);
+    my $login     = $self->db_insert(
+        'login',
+        [ 'sid', 'loginid', 'loggedin', 'expiry_ts', ],
+        [ $sid,  $loginid,  0,          $expiry_ts, ]
+    );
+    my $limitation = $self->db_insert(
+        'limitation',
+        [ 'loginid', 'status' ],
+        [ $loginid,  $params->{limitation} ]
+    );
+    return { sid => $login->{sid} };
 }
 
 sub _refresh {

@@ -55,6 +55,23 @@ sub dump {
     return $d->Dump;
 }
 
+sub is_root {
+    my ( $self, @args ) = @_;
+    my $params = shift @args;
+    my $row    = $self->single( 'limitation', ['loginid'], $params );
+    return if !$row;
+    return if $row->{status} ne '100';
+    return 1;
+}
+
+sub sid_to_loginid {
+    my ( $self, @args ) = @_;
+    my $params = shift @args;
+    my $row    = $self->single( 'login', ['sid'], $params );
+    return                 if !$row;
+    return $row->{loginid} if $row;
+}
+
 # $self->single($table, \@cols, \%params);
 sub single {
     my ( $self, $table, $cols, $params ) = @_;
