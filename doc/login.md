@@ -42,6 +42,10 @@ refresh     Update session id
 
 ログインユーザーの作成
 
+```text
+ログインユーザーの作成後はログイン状態
+```
+
 Request parameters
 
 ```json
@@ -180,7 +184,7 @@ beauth login status --params='{}'
 
 ### Login refresh
 
-セッションIDを更新
+セッション ID を更新
 
 Request parameters
 

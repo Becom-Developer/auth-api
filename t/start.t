@@ -143,7 +143,7 @@ subtest 'Login signup' => sub {
     my $status =
       $obj->run( { method => "status", params => { sid => $hash->{sid} } } )
       ->{status};
-    like( $status, qr/400/, 'error login status' );
+    like( $status, qr/200/, 'success login status' );
 };
 
 subtest 'User' => sub {
@@ -237,13 +237,24 @@ subtest 'Login' => sub {
     my $obj = new_ok('Beauth::Login');
     my $msg = $obj->run()->{error}->{message};
     ok( $msg, 'error message' );
-    my $sample     = +{ loginid => 'info@becom.co.jp', password => "info" };
-    my $signup_sid = new_ok('Beauth::Login')->run(
-        {
-            method => "signup",
-            params => +{ %{$sample}, limitation => "100", },
-        }
-    )->{sid};
+    my $sample = +{ loginid => 'info@becom.co.jp', password => "info" };
+    subtest 'signup to end' => sub {
+        my $signup_sid = $obj->run(
+            {
+                method => "signup",
+                params => +{ %{$sample}, limitation => "100", },
+            }
+        )->{sid};
+        my $status =
+          $obj->run( { method => "status", params => { sid => $signup_sid } } )
+          ->{status};
+        like( $status, qr/200/, 'success login status' );
+        $obj->run( { method => "end", params => { sid => $signup_sid } } );
+        my $logout_status =
+          $obj->run( { method => "status", params => { sid => $signup_sid } } )
+          ->{status};
+        like( $logout_status, qr/400/, 'success logout' );
+    };
     subtest 'start to end' => sub {
         my $hash = $obj->run( { method => "start", params => $sample, } );
         my $sid  = decode_base64( $hash->{sid} );
@@ -299,6 +310,37 @@ subtest 'Login' => sub {
         like( $chars_status->{status}, qr/400/, 'success logout' );
     };
 };
+
+# subtest 'Webapi' => sub {
+#     new_ok('Beauth::Build')->start( { method => 'init' } );
+#     my $obj = new_ok('Beauth::Webapi');
+#     my $msg = $obj->run()->{error}->{message};
+#     ok( $msg, 'error message' );
+#     my $sample     = +{ loginid => 'info@becom.co.jp', password => "info" };
+#     my $signup_sid = new_ok('Beauth::Login')->run(
+#         {
+#             method => "signup",
+#             params => +{
+#                 loginid    => 'root@becom.co.jp',
+#                 password   => "root",
+#                 limitation => "100",
+#             },
+#         }
+#     )->{sid};
+#     subtest 'issue' => sub {
+#         my $q = +{
+#             method => "issue",
+#             params => {
+#                 sid    => $signup_sid,
+#                 target => "zsearch",
+#             }
+#         };
+#         my $hash = $obj->run($q);
+#         # ok( $hash->{loginid} eq $q->{params}->{loginid},   'insert' );
+#         # ok( $hash->{password} eq $q->{params}->{password}, 'insert' );
+#         # ok( $obj->is_general( { loginid => $hash->{loginid} } ) );
+#     };
+# };
 
 done_testing;
 

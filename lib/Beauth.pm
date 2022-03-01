@@ -14,13 +14,15 @@ use Beauth::Build;
 use Beauth::Error;
 use Beauth::User;
 use Beauth::Login;
+use Beauth::Webapi;
 
 # class
-sub new   { bless {}, shift; }
-sub build { Beauth::Build->new }
-sub error { Beauth::Error->new }
-sub user  { Beauth::User->new }
-sub login { Beauth::Login->new }
+sub new    { bless {}, shift; }
+sub build  { Beauth::Build->new }
+sub error  { Beauth::Error->new }
+sub user   { Beauth::User->new }
+sub login  { Beauth::Login->new }
+sub webapi { Beauth::Webapi->new }
 
 # helper
 sub time_stamp { localtime->datetime( 'T' => ' ' ); }
@@ -76,7 +78,8 @@ sub is_general {
 sub sid_to_loginid {
     my ( $self, @args ) = @_;
     my $params = shift @args;
-    my $row    = $self->single( 'login', ['sid'], $params );
+    $params->{loggedin} = "1";
+    my $row = $self->single( 'login', [ 'sid', 'loggedin' ], $params );
     return                 if !$row;
     return $row->{loginid} if $row;
 }

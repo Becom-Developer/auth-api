@@ -34,7 +34,7 @@ sub _signup {
     my $login     = $self->db_insert(
         'login',
         [ 'sid', 'loginid', 'loggedin', 'expiry_ts', ],
-        [ $sid,  $loginid,  0,          $expiry_ts, ]
+        [ $sid,  $loginid,  1,          $expiry_ts, ]
     );
     my $limitation = $self->db_insert(
         'limitation',
