@@ -151,8 +151,7 @@ subtest 'User' => sub {
     my $obj = new_ok('Beauth::User');
     my $msg = $obj->run()->{error}->{message};
     ok( $msg, 'error message' );
-    my $sample     = +{ loginid => 'info@becom.co.jp', password => "info" };
-    my $signup_sid = new_ok('Beauth::Login')->run(
+    my $sid = new_ok('Beauth::Login')->run(
         {
             method => "signup",
             params => +{
@@ -162,31 +161,30 @@ subtest 'User' => sub {
             },
         }
     )->{sid};
+    my $sample =
+      +{ loginid => 'info@becom.co.jp', password => "info", sid => $sid };
     subtest 'insert' => sub {
-        my $q = +{ method => "insert", params => $sample, };
-        $q->{params}->{sid} = $signup_sid;
+        my $q    = +{ method => "insert", params => $sample, };
         my $hash = $obj->run($q);
         ok( $hash->{loginid} eq $q->{params}->{loginid},   'insert' );
         ok( $hash->{password} eq $q->{params}->{password}, 'insert' );
         ok( $obj->is_general( { loginid => $hash->{loginid} } ) );
     };
     subtest 'get' => sub {
-        my $sid        = $signup_sid;
-        my $get_params = { loginid => $sample->{loginid}, sid => $sid };
-        my $args       = +{ method => "get", params => $get_params };
-        my $hash       = $obj->run($args);
+        my $params = { loginid => $sample->{loginid}, sid => $sample->{sid} };
+        my $args   = +{ method => "get", params => $params };
+        my $hash   = $obj->run($args);
         ok( $hash->{loginid} eq $sample->{loginid},   'get' );
         ok( $hash->{password} eq $sample->{password}, 'get' );
     };
     subtest 'list' => sub {
-        my $args = +{ method => "list", params => { sid => $signup_sid } };
+        my $args = +{ method => "list", params => { sid => $sid } };
         my $rows = $obj->run($args);
         my $data = [ grep { $_->{loginid} eq $sample->{loginid} } @{$rows} ];
         ok( $data->[0]->{loginid} eq $sample->{loginid},   'list' );
         ok( $data->[0]->{password} eq $sample->{password}, 'list' );
     };
     subtest 'update' => sub {
-        my $sid         = $signup_sid;
         my $get_params  = { loginid => $sample->{loginid}, sid => $sid };
         my $get_args    = { method  => "get", params => $get_params };
         my $id          = $obj->run($get_args)->{id};
@@ -215,7 +213,6 @@ subtest 'User' => sub {
         ok( $loginid eq $sample->{loginid}, 'update' );
     };
     subtest 'delete' => sub {
-        my $sid        = $signup_sid;
         my $loginid    = $sample->{loginid};
         my $get_params = { loginid => $loginid, sid => $sid };
         my $get_args   = { method  => "get", params => $get_params };
