@@ -239,20 +239,14 @@ subtest 'Login' => sub {
     ok( $msg, 'error message' );
     my $sample = +{ loginid => 'info@becom.co.jp', password => "info" };
     subtest 'signup to end' => sub {
-        my $signup_sid = $obj->run(
-            {
-                method => "signup",
-                params => +{ %{$sample}, limitation => "100", },
-            }
-        )->{sid};
-        my $status =
-          $obj->run( { method => "status", params => { sid => $signup_sid } } )
-          ->{status};
-        like( $status, qr/200/, 'success login status' );
-        $obj->run( { method => "end", params => { sid => $signup_sid } } );
-        my $logout_status =
-          $obj->run( { method => "status", params => { sid => $signup_sid } } )
-          ->{status};
+        my $signup_params = +{ %{$sample}, limitation => "100", };
+        my $args          = { method => "signup", params => $signup_params };
+        my $sid           = $obj->run($args)->{sid};
+        my $status_args   = { method => "status", params => { sid => $sid } };
+        my $login_status  = $obj->run($status_args)->{status};
+        like( $login_status, qr/200/, 'success login status' );
+        $obj->run( { method => "end", params => { sid => $sid } } );
+        my $logout_status = $obj->run($status_args)->{status};
         like( $logout_status, qr/400/, 'success logout' );
     };
     subtest 'start to end' => sub {
