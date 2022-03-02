@@ -207,19 +207,15 @@ subtest 'User' => sub {
         ok( $loginid eq $sample->{loginid}, 'update' );
     };
     subtest 'delete' => sub {
-        my $q =
-          { method => "get", params => { loginid => $sample->{loginid} } };
-        $q->{params}->{sid} = $signup_sid;
-        my $id = $obj->run($q)->{id};
-        $q->{method}        = 'delete';
-        $q->{params}        = +{ id => $id, };
-        $q->{params}->{sid} = $signup_sid;
-        my $hash = $obj->run($q);
+        my $sid        = $signup_sid;
+        my $loginid    = $sample->{loginid};
+        my $get_params = { loginid => $loginid, sid => $sid };
+        my $get_args   = { method  => "get", params => $get_params };
+        my $id   = $obj->run($get_args)->{id};
+        my $args = { method => "delete", params => { id => $id, sid => $sid } };
+        my $hash = $obj->run($args);
         ok( !%{$hash}, 'delete' );
-        $q->{method}        = 'get';
-        $q->{params}        = { loginid => $sample->{loginid} };
-        $q->{params}->{sid} = $signup_sid;
-        my $error = $obj->run($q)->{error};
+        my $error = $obj->run($get_args)->{error};
         ok( $error->{message}, 'delete' );
     };
     subtest 'script insert' => sub {
