@@ -256,17 +256,14 @@ subtest 'Login' => sub {
         like( $logout_status, qr/400/, 'success logout' );
     };
     subtest 'start to end' => sub {
-        my $hash = $obj->run( { method => "start", params => $sample, } );
-        my $sid  = decode_base64( $hash->{sid} );
-        like( $sid, qr/$sample->{loginid}/, 'success sid' );
-        my $status =
-          $obj->run( { method => "status", params => { sid => $hash->{sid} } } )
-          ->{status};
+        my $sid = $obj->run( { method => "start", params => $sample, } )->{sid};
+        my $decode_sid = decode_base64($sid);
+        like( $decode_sid, qr/$sample->{loginid}/, 'success sid' );
+        my $status_args = { method => "status", params => { sid => $sid } };
+        my $status      = $obj->run($status_args)->{status};
         like( $status, qr/200/, 'success login status' );
-        $obj->run( { method => "end", params => { sid => $hash->{sid} } } );
-        my $logout_status =
-          $obj->run( { method => "status", params => { sid => $hash->{sid} } } )
-          ->{status};
+        $obj->run( { method => "end", params => { sid => $sid } } );
+        my $logout_status = $obj->run($status_args)->{status};
         like( $logout_status, qr/400/, 'success logout' );
     };
     subtest 'Duplicate login' => sub {
