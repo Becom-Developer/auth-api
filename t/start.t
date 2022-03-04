@@ -36,6 +36,7 @@ subtest 'Class and Method' => sub {
     can_ok( new_ok('Beauth::User'),   (@methods) );
     can_ok( new_ok('Beauth::CLI'),    (@methods) );
     can_ok( new_ok('Beauth::Login'),  (@methods) );
+    can_ok( new_ok('Beauth::Webapi'), (@methods) );
 };
 
 subtest 'Framework Render' => sub {
@@ -302,37 +303,6 @@ subtest 'Login' => sub {
         like( $chars_status->{status}, qr/400/, 'success logout' );
     };
 };
-
-# subtest 'Webapi' => sub {
-#     new_ok('Beauth::Build')->start( { method => 'init' } );
-#     my $obj = new_ok('Beauth::Webapi');
-#     my $msg = $obj->run()->{error}->{message};
-#     ok( $msg, 'error message' );
-#     my $sample     = +{ loginid => 'info@becom.co.jp', password => "info" };
-#     my $signup_sid = new_ok('Beauth::Login')->run(
-#         {
-#             method => "signup",
-#             params => +{
-#                 loginid    => 'root@becom.co.jp',
-#                 password   => "root",
-#                 limitation => "100",
-#             },
-#         }
-#     )->{sid};
-#     subtest 'issue' => sub {
-#         my $q = +{
-#             method => "issue",
-#             params => {
-#                 sid    => $signup_sid,
-#                 target => "zsearch",
-#             }
-#         };
-#         my $hash = $obj->run($q);
-#         # ok( $hash->{loginid} eq $q->{params}->{loginid},   'insert' );
-#         # ok( $hash->{password} eq $q->{params}->{password}, 'insert' );
-#         # ok( $obj->is_general( { loginid => $hash->{loginid} } ) );
-#     };
-# };
 
 done_testing;
 

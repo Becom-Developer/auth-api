@@ -100,10 +100,10 @@ sub _start {
 
 sub _status {
     my ( $self, @args ) = @_;
-    my $options = shift @args;
-    my $params  = $options->{params};
-    $params->{loggedin} = 1;
-    my $row = $self->single( 'login', [ 'sid', 'loggedin' ], $params );
+    my $options  = shift @args;
+    my $params   = $options->{params};
+    my $q_params = { %{$params}, loggedin => "1", };
+    my $row      = $self->single( 'login', [ 'sid', 'loggedin' ], $q_params );
     return { status => 400 } if !$row;
     return { status => 200, sid => $row->{sid} };
 }

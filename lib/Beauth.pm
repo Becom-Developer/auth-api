@@ -39,6 +39,19 @@ sub session_id {
     return $sid;
 }
 
+sub apikey {
+    my ( $self, @args ) = @_;
+    my $loginid   = shift @args;
+    my $target    = shift @args;
+    my $expiry_ts = $self->ts_10_days_later;
+
+    # 4桁の簡易的な乱数
+    my $rand   = int rand(1000);
+    my $id     = sprintf '%04d', $rand;
+    my $apikey = encode_base64( "$loginid:$expiry_ts:$target:$id", '' );
+    return $apikey;
+}
+
 sub ts_10_days_later {
     my $t = localtime;
     $t += ( ONE_DAY * 10 );
@@ -77,11 +90,23 @@ sub is_general {
 
 sub sid_to_loginid {
     my ( $self, @args ) = @_;
-    my $params = shift @args;
-    $params->{loggedin} = "1";
-    my $row = $self->single( 'login', [ 'sid', 'loggedin' ], $params );
+    my $params   = shift @args;
+    my $q_params = { %{$params}, loggedin => "1", };
+    my $row      = $self->single( 'login', [ 'sid', 'loggedin' ], $q_params );
     return                 if !$row;
     return $row->{loginid} if $row;
+}
+
+sub is_valid_app {
+    my ( $self, @args ) = @_;
+    my $params = shift @args;
+
+    # 暫定にここでappリスト書いておく
+    my $list   = [ 'zsearch', 'mhj' ];
+    my $target = $params->{target};
+    return   if !$target;
+    return 1 if grep { $_ eq $target } @{$list};
+    return;
 }
 
 # $self->single($table, \@cols, \%params);
