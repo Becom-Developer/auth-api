@@ -14,13 +14,15 @@ use Beauth::Build;
 use Beauth::Error;
 use Beauth::User;
 use Beauth::Login;
+use Beauth::Webapi;
 
 # class
-sub new   { bless {}, shift; }
-sub build { Beauth::Build->new }
-sub error { Beauth::Error->new }
-sub user  { Beauth::User->new }
-sub login { Beauth::Login->new }
+sub new    { bless {}, shift; }
+sub build  { Beauth::Build->new }
+sub error  { Beauth::Error->new }
+sub user   { Beauth::User->new }
+sub login  { Beauth::Login->new }
+sub webapi { Beauth::Webapi->new }
 
 # helper
 sub time_stamp { localtime->datetime( 'T' => ' ' ); }
@@ -35,6 +37,19 @@ sub session_id {
     my $id   = sprintf '%04d', $rand;
     my $sid  = encode_base64( "$loginid:$expiry_ts:$id", '' );
     return $sid;
+}
+
+sub apikey {
+    my ( $self, @args ) = @_;
+    my $loginid   = shift @args;
+    my $target    = shift @args;
+    my $expiry_ts = $self->ts_10_days_later;
+
+    # 4桁の簡易的な乱数
+    my $rand   = int rand(1000);
+    my $id     = sprintf '%04d', $rand;
+    my $apikey = encode_base64( "$loginid:$expiry_ts:$target:$id", '' );
+    return $apikey;
 }
 
 sub ts_10_days_later {
@@ -53,6 +68,45 @@ sub dump {
     my ( $self, @args ) = @_;
     my $d = Data::Dumper->new( [ shift @args ] );
     return $d->Dump;
+}
+
+sub is_root {
+    my ( $self, @args ) = @_;
+    my $params = shift @args;
+    my $row    = $self->single( 'limitation', ['loginid'], $params );
+    return   if !$row;
+    return 1 if $row->{status} eq '100';
+    return;
+}
+
+sub is_general {
+    my ( $self, @args ) = @_;
+    my $params = shift @args;
+    my $row    = $self->single( 'limitation', ['loginid'], $params );
+    return   if !$row;
+    return 1 if $row->{status} eq '200';
+    return;
+}
+
+sub sid_to_loginid {
+    my ( $self, @args ) = @_;
+    my $params   = shift @args;
+    my $q_params = { %{$params}, loggedin => "1", };
+    my $row      = $self->single( 'login', [ 'sid', 'loggedin' ], $q_params );
+    return                 if !$row;
+    return $row->{loginid} if $row;
+}
+
+sub is_valid_app {
+    my ( $self, @args ) = @_;
+    my $params = shift @args;
+
+    # 暫定にここでappリスト書いておく
+    my $list   = [ 'zsearch', 'mhj' ];
+    my $target = $params->{target};
+    return   if !$target;
+    return 1 if grep { $_ eq $target } @{$list};
+    return;
 }
 
 # $self->single($table, \@cols, \%params);

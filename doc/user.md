@@ -2,6 +2,13 @@
 
 登録ユーザー
 
+```text
+管理者と登録者との操作の違いはsidから判定
+ログインを通過したときに発行されるsidの値が必要
+httpリクエストの場合Cookieにsidが存在する場合はそちらを判定
+Cookieに存在しない場合はパラメーターのsidを判定に利用します
+```
+
 CLI
 
 ```text
@@ -40,6 +47,7 @@ Request parameters
 
 ```json
 {
+  "sid": "aW5mb0BiZWNvbS5jby5qcDoyMDIyLTAzLTA3IDE0OjI1OjA0",
   "loginid": "info@becom.co.jp"
 }
 ```
@@ -65,6 +73,7 @@ curl 'https://auth-api.becom.co.jp/' \
 --verbose \
 --header 'Content-Type: application/json' \
 --header 'accept: application/json' \
+--header 'Cookie: sid=aW5mb0BiZWNvbS5jby5qcDoyMDIyLTAzLTA3IDE0OjI1OjA0' \
 --data-binary '{"resource":"user","method":"get","apikey":"becom","params":{}}'
 ```
 
@@ -81,7 +90,7 @@ beauth user get --params='{}'
 Request parameters
 
 ```json
-{}
+{ "sid": "aW5mb0BiZWNvbS5jby5qcDoyMDIyLTAzLTA3IDE0OjI1OjA0" }
 ```
 
 Response parameters
@@ -107,6 +116,7 @@ curl 'https://auth-api.becom.co.jp' \
 --verbose \
 --header 'Content-Type: application/json' \
 --header 'accept: application/json' \
+--header 'Cookie: sid=aW5mb0BiZWNvbS5jby5qcDoyMDIyLTAzLTA3IDE0OjI1OjA0' \
 --data-binary '{"resource":"user","method":"list","apikey":"becom","params":{}}'
 ```
 
@@ -118,12 +128,13 @@ beauth user list --params='{}'
 
 ### User insert
 
-登録ユーザーの新規作成
+登録ユーザーの新規作成(root権限のみ有効)
 
 Request parameters
 
 ```json
 {
+  "sid": "aW5mb0BiZWNvbS5jby5qcDoyMDIyLTAzLTA3IDE0OjI1OjA0",
   "loginid": "info@becom.co.jp",
   "password": "info"
 }
@@ -150,6 +161,7 @@ curl 'https://auth-api.becom.co.jp' \
 --verbose \
 --header 'Content-Type: application/json' \
 --header 'accept: application/json' \
+--header 'Cookie: sid=aW5mb0BiZWNvbS5jby5qcDoyMDIyLTAzLTA3IDE0OjI1OjA0' \
 --data-binary '{"resource":"user","method":"insert","apikey":"becom","params":{}}'
 ```
 
@@ -161,14 +173,14 @@ beauth user insert --params='{}'
 
 ### User update
 
-登録ユーザーの更新
+登録ユーザーのパスワード更新
 
 Request parameters
 
 ```json
 {
+  "sid": "aW5mb0BiZWNvbS5jby5qcDoyMDIyLTAzLTA3IDE0OjI1OjA0",
   "id": 1,
-  "loginid": "updateinfo@becom.co.jp",
   "password": "updateinfo"
 }
 ```
@@ -194,6 +206,7 @@ curl 'https://auth-api.becom.co.jp' \
 --verbose \
 --header 'Content-Type: application/json' \
 --header 'accept: application/json' \
+--header 'Cookie: sid=aW5mb0BiZWNvbS5jby5qcDoyMDIyLTAzLTA3IDE0OjI1OjA0' \
 --data-binary '{"resource":"user","method":"update","apikey":"becom","params":{}}'
 ```
 
@@ -211,6 +224,7 @@ Request parameters
 
 ```json
 {
+  "sid": "aW5mb0BiZWNvbS5jby5qcDoyMDIyLTAzLTA3IDE0OjI1OjA0",
   "id": 1
 }
 ```
@@ -228,6 +242,7 @@ curl 'https://auth-api.becom.co.jp' \
 --verbose \
 --header 'Content-Type: application/json' \
 --header 'accept: application/json' \
+--header 'Cookie: sid=aW5mb0BiZWNvbS5jby5qcDoyMDIyLTAzLTA3IDE0OjI1OjA0' \
 --data-binary '{"resource":"user","method":"delete","apikey":"becom","params":{}}'
 ```
 

@@ -36,6 +36,7 @@ subtest 'Class and Method' => sub {
     can_ok( new_ok('Beauth::User'),   (@methods) );
     can_ok( new_ok('Beauth::CLI'),    (@methods) );
     can_ok( new_ok('Beauth::Login'),  (@methods) );
+    can_ok( new_ok('Beauth::Webapi'), (@methods) );
 };
 
 subtest 'Framework Render' => sub {
@@ -128,60 +129,99 @@ subtest 'Script' => sub {
     like( $trap->stdout, qr/success/, 'success init' );
 };
 
+# ログインユーザーを作成する以外は全て認証sid必要
+subtest 'Login signup' => sub {
+    new_ok('Beauth::Build')->start( { method => 'init' } );
+    my $obj    = new_ok('Beauth::Login');
+    my $sample = +{
+        loginid    => 'info@becom.co.jp',
+        password   => "info",
+        limitation => "100"
+    };
+    my $hash = $obj->run( { method => "signup", params => $sample, } );
+    my $sid  = decode_base64( $hash->{sid} );
+    like( $sid, qr/$sample->{loginid}/, 'success sid' );
+    my $status =
+      $obj->run( { method => "status", params => { sid => $hash->{sid} } } )
+      ->{status};
+    like( $status, qr/200/, 'success login status' );
+};
+
 subtest 'User' => sub {
     new_ok('Beauth::Build')->start( { method => 'init' } );
     my $obj = new_ok('Beauth::User');
     my $msg = $obj->run()->{error}->{message};
     ok( $msg, 'error message' );
-    my $sample = +{ loginid => 'info@becom.co.jp', password => "info" };
+    my $sid = new_ok('Beauth::Login')->run(
+        {
+            method => "signup",
+            params => +{
+                loginid    => 'root@becom.co.jp',
+                password   => "root",
+                limitation => "100",
+            },
+        }
+    )->{sid};
+    my $sample =
+      +{ loginid => 'info@becom.co.jp', password => "info", sid => $sid };
     subtest 'insert' => sub {
         my $q    = +{ method => "insert", params => $sample, };
         my $hash = $obj->run($q);
         ok( $hash->{loginid} eq $q->{params}->{loginid},   'insert' );
         ok( $hash->{password} eq $q->{params}->{password}, 'insert' );
+        ok( $obj->is_general( { loginid => $hash->{loginid} } ) );
     };
     subtest 'get' => sub {
-        my $q =
-          +{ method => "get", params => +{ loginid => $sample->{loginid}, } };
-        my $hash = $obj->run($q);
+        my $params = { loginid => $sample->{loginid}, sid => $sample->{sid} };
+        my $args   = +{ method => "get", params => $params };
+        my $hash   = $obj->run($args);
         ok( $hash->{loginid} eq $sample->{loginid},   'get' );
         ok( $hash->{password} eq $sample->{password}, 'get' );
     };
     subtest 'list' => sub {
-        my $q    = +{ method => "list", params => +{} };
-        my $rows = $obj->run($q);
-        ok( $rows->[0]->{loginid} eq $sample->{loginid},   'list' );
-        ok( $rows->[0]->{password} eq $sample->{password}, 'list' );
+        my $args = +{ method => "list", params => { sid => $sid } };
+        my $rows = $obj->run($args);
+        my $data = [ grep { $_->{loginid} eq $sample->{loginid} } @{$rows} ];
+        ok( $data->[0]->{loginid} eq $sample->{loginid},   'list' );
+        ok( $data->[0]->{password} eq $sample->{password}, 'list' );
     };
     subtest 'update' => sub {
-        my $q =
-          { method => "get", params => { loginid => $sample->{loginid} } };
-        my $id = $obj->run($q)->{id};
-        $q->{method} = 'update';
-        $q->{params} = +{
-            id       => $id,
-            loginid  => 'info2@becom.co.jp',
-            password => 'info2',
+        my $get_params  = { loginid => $sample->{loginid}, sid => $sid };
+        my $get_args    = { method  => "get", params => $get_params };
+        my $id          = $obj->run($get_args)->{id};
+        my $update_args = {
+            method => "update",
+            params => {
+                sid      => $sid,
+                id       => $id,
+                loginid  => 'info2@becom.co.jp',
+                password => 'info2',
+            }
         };
-        my $hash = $obj->run($q);
-        ok( $hash->{loginid} eq $q->{params}->{loginid},   'update' );
-        ok( $hash->{password} eq $q->{params}->{password}, 'update' );
-        $q->{params}->{loginid}  = $sample->{loginid};
-        $q->{params}->{password} = $sample->{password};
-        my $loginid = $obj->run($q)->{loginid};
+        my $hash = $obj->run($update_args);
+        ok( $hash->{loginid} ne $update_args->{params}->{loginid},   'update' );
+        ok( $hash->{password} eq $update_args->{params}->{password}, 'update' );
+        my $re_update_args = {
+            method => "update",
+            params => {
+                sid      => $sid,
+                id       => $id,
+                loginid  => $sample->{loginid},
+                password => $sample->{password},
+            }
+        };
+        my $loginid = $obj->run($re_update_args)->{loginid};
         ok( $loginid eq $sample->{loginid}, 'update' );
     };
     subtest 'delete' => sub {
-        my $q =
-          { method => "get", params => { loginid => $sample->{loginid} } };
-        my $id = $obj->run($q)->{id};
-        $q->{method} = 'delete';
-        $q->{params} = +{ id => $id, };
-        my $hash = $obj->run($q);
+        my $loginid    = $sample->{loginid};
+        my $get_params = { loginid => $loginid, sid => $sid };
+        my $get_args   = { method  => "get", params => $get_params };
+        my $id   = $obj->run($get_args)->{id};
+        my $args = { method => "delete", params => { id => $id, sid => $sid } };
+        my $hash = $obj->run($args);
         ok( !%{$hash}, 'delete' );
-        $q->{method} = 'get';
-        $q->{params} = { loginid => $sample->{loginid} };
-        my $error = $obj->run($q)->{error};
+        my $error = $obj->run($get_args)->{error};
         ok( $error->{message}, 'delete' );
     };
     subtest 'script insert' => sub {
@@ -200,19 +240,26 @@ subtest 'Login' => sub {
     my $msg = $obj->run()->{error}->{message};
     ok( $msg, 'error message' );
     my $sample = +{ loginid => 'info@becom.co.jp', password => "info" };
-    new_ok('Beauth::User')->run( { method => "insert", params => $sample, } );
+    subtest 'signup to end' => sub {
+        my $signup_params = +{ %{$sample}, limitation => "100", };
+        my $args          = { method => "signup", params => $signup_params };
+        my $sid           = $obj->run($args)->{sid};
+        my $status_args   = { method => "status", params => { sid => $sid } };
+        my $login_status  = $obj->run($status_args)->{status};
+        like( $login_status, qr/200/, 'success login status' );
+        $obj->run( { method => "end", params => { sid => $sid } } );
+        my $logout_status = $obj->run($status_args)->{status};
+        like( $logout_status, qr/400/, 'success logout' );
+    };
     subtest 'start to end' => sub {
-        my $hash = $obj->run( { method => "start", params => $sample, } );
-        my $sid  = decode_base64( $hash->{sid} );
-        like( $sid, qr/$sample->{loginid}/, 'success sid' );
-        my $status =
-          $obj->run( { method => "status", params => { sid => $hash->{sid} } } )
-          ->{status};
+        my $sid = $obj->run( { method => "start", params => $sample, } )->{sid};
+        my $decode_sid = decode_base64($sid);
+        like( $decode_sid, qr/$sample->{loginid}/, 'success sid' );
+        my $status_args = { method => "status", params => { sid => $sid } };
+        my $status      = $obj->run($status_args)->{status};
         like( $status, qr/200/, 'success login status' );
-        $obj->run( { method => "end", params => { sid => $hash->{sid} } } );
-        my $logout_status =
-          $obj->run( { method => "status", params => { sid => $hash->{sid} } } )
-          ->{status};
+        $obj->run( { method => "end", params => { sid => $sid } } );
+        my $logout_status = $obj->run($status_args)->{status};
         like( $logout_status, qr/400/, 'success logout' );
     };
     subtest 'Duplicate login' => sub {
