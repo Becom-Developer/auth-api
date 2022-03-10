@@ -70,8 +70,7 @@ See here for details: [doc/](doc/)
 build     Environment
 user      Registered user
 login     Login system
-session   Issuing unique values
-apikey    Manage apikey
+webapi    Manage apikey
 ```
 
 ## Memo
