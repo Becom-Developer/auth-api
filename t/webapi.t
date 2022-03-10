@@ -36,11 +36,15 @@ subtest 'Webapi' => sub {
             params => { sid => $sid, apikey => $hash->{apikey}, }
         };
         my $delete = $obj->run($delete_args);
-        is( $delete->{sid}, $sid, 'issue' );
+        is( $delete->{sid}, $sid, 'delete' );
         my $try_issue = $obj->run($args);
-        ok( $try_issue->{apikey}, 'issue' );
-        isnt( $try_issue->{apikey}, $hash->{apikey}, 'issue' );
-        is( $try_issue->{sid}, $sid, 'issue' );
+        ok( $try_issue->{apikey}, 'delete' );
+        isnt( $try_issue->{apikey}, $hash->{apikey}, 'delete' );
+        is( $try_issue->{sid}, $sid, 'delete' );
+        my $list_args = +{ method => "list", params => { sid => $sid } };
+        my $list      = $obj->run($list_args);
+        is( $list->{sid},                 $sid,                 'list' );
+        is( $list->{list}->[0]->{apikey}, $try_issue->{apikey}, 'list' );
     };
 };
 
