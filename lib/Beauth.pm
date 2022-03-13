@@ -15,6 +15,7 @@ use Beauth::Error;
 use Beauth::User;
 use Beauth::Login;
 use Beauth::Webapi;
+use Beauth::DB;
 
 # class
 sub new    { bless {}, shift; }
@@ -23,6 +24,7 @@ sub error  { Beauth::Error->new }
 sub user   { Beauth::User->new }
 sub login  { Beauth::Login->new }
 sub webapi { Beauth::Webapi->new }
+sub db     { Beauth::DB->new }
 
 # helper
 sub time_stamp { localtime->datetime( 'T' => ' ' ); }

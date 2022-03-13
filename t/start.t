@@ -37,6 +37,7 @@ subtest 'Class and Method' => sub {
     can_ok( new_ok('Beauth::CLI'),    (@methods) );
     can_ok( new_ok('Beauth::Login'),  (@methods) );
     can_ok( new_ok('Beauth::Webapi'), (@methods) );
+    new_ok('Beauth::DB');
 };
 
 subtest 'Framework Render' => sub {
