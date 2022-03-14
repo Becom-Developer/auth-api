@@ -6,9 +6,9 @@ use FindBin;
 use lib ( "$FindBin::RealBin/../lib", "$FindBin::RealBin/../local/lib/perl5" );
 use Data::Dumper;
 use SQLite::Simple;
+use File::Spec;
 use File::Temp qw/ tempfile tempdir /;
 use File::Path qw(make_path remove_tree);
-$ENV{"BEAUTH_MODE"} = 'test';
 
 subtest 'Class and Method' => sub {
     new_ok('SQLite::Simple');
@@ -25,25 +25,18 @@ subtest 'args' => sub {
 };
 
 subtest 'build insert dump restore' => sub {
-    my $tmp_db = File::Temp->new(
-        TEMPLATE => 'sampleXXXXX',
-        DIR      => "$FindBin::RealBin/",
-        SUFFIX   => '.db',
-        EXLOCK   => 0,
-        UNLINK   => 1,
+    my $temp = File::Temp->newdir(
+        DIR     => $FindBin::RealBin,
+        CLEANUP => 1,
     );
-    my $db       = $tmp_db->filename;
-    my $tmp_dump = File::Temp->new(
-        TEMPLATE => 'sampleXXXXX',
-        DIR      => "$FindBin::RealBin/",
-        SUFFIX   => '.dump',
-        EXLOCK   => 0,
-        UNLINK   => 1,
-    );
-    my $dump = $tmp_dump->filename;
-    my $args = +{
+    my $test_dir = $temp->dirname;
+    my $dump     = File::Spec->catfile( $test_dir,         'sample.dump' );
+    my $db       = File::Spec->catfile( $test_dir,         'sample.db' );
+    my $sql      = File::Spec->catfile( $FindBin::RealBin, 'test.sql' );
+    my $csv      = File::Spec->catfile( $FindBin::RealBin, 'test.csv' );
+    my $args     = +{
         db_file_path   => $db,
-        sql_file_path  => "$FindBin::RealBin/test.sql",
+        sql_file_path  => $sql,
         dump_file_path => $dump,
     };
     my $obj       = new_ok( 'SQLite::Simple' => [$args] );
@@ -51,7 +44,7 @@ subtest 'build insert dump restore' => sub {
     like( $build_msg->{message}, qr/success/, 'success init' );
     like( $build_msg->{message}, qr/sample/,  'success init' );
     my $params = +{
-        csv   => "$FindBin::RealBin/test.csv",
+        csv   => $csv,
         table => 'user',
         cols  => [
             'loginid',    'password', 'approved', 'deleted',

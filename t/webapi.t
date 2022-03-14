@@ -5,7 +5,15 @@ use Test::More;
 use FindBin;
 use lib ( "$FindBin::RealBin/../lib", "$FindBin::RealBin/../local/lib/perl5" );
 use Beauth;
+use File::Temp qw/ tempfile tempdir /;
+my $temp = File::Temp->newdir(
+    DIR     => $FindBin::RealBin,
+    CLEANUP => 1,
+);
+my $test_dir = $temp->dirname;
 $ENV{"BEAUTH_MODE"} = 'test';
+$ENV{"BEAUTH_DUMP"} = File::Spec->catfile( $test_dir, 'beauth.dump' );
+$ENV{"BEAUTH_DB"}   = File::Spec->catfile( $test_dir, 'beauth.db' );
 
 subtest 'Webapi' => sub {
     new_ok('Beauth::Build')->start( { method => 'init' } );

@@ -12,8 +12,15 @@ use MIME::Base64;
 use Beauth;
 use Beauth::Render;
 use Beauth::CLI;
+use File::Temp qw/ tempfile tempdir /;
+my $temp = File::Temp->newdir(
+    DIR     => $FindBin::RealBin,
+    CLEANUP => 1,
+);
+my $test_dir = $temp->dirname;
 $ENV{"BEAUTH_MODE"} = 'test';
-$ENV{"BEAUTH_DUMP"} = File::Spec->catfile( $FindBin::RealBin, 'beauth.dump' );
+$ENV{"BEAUTH_DUMP"} = File::Spec->catfile( $test_dir, 'beauth.dump' );
+$ENV{"BEAUTH_DB"}   = File::Spec->catfile( $test_dir, 'beauth.db' );
 
 # 環境変数
 # BEAUTH_MODE 実行モード
@@ -34,8 +41,7 @@ subtest 'Class and Method' => sub {
     my @methods = (
         'new',           'time_stamp',     'is_test_mode', 'dump',
         'home',          'homedb',         'homebackup',   'db_file_path',
-        'sql_file_path', 'dump_file_path', 'db_file',      'insert_csv',
-        'build_dbh'
+        'sql_file_path', 'dump_file_path', 'insert_csv',   'build_dbh'
     );
     can_ok( new_ok('Beauth'),         (@methods) );
     can_ok( new_ok('Beauth::Render'), (@methods) );

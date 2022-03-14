@@ -112,7 +112,6 @@ sub build_restore {
     my $db      = $self->db_file_path;
     my $dump    = $self->dump_file_path;
     my $db_file = basename($db);
-
     die "not file: $!: $dump" if !-e $dump;
     if ( -e $db ) {
         unlink $db;

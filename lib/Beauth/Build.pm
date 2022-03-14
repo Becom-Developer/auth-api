@@ -23,12 +23,13 @@ sub start {
 
 sub _init {
     my ( $self, @args ) = @_;
-    my $db_file = $self->db_file;
     my $db      = $self->db_file_path;
     my $sql     = $self->sql_file_path;
+    my $db_file = basename($db);
     die "not file: $!: $sql" if !-e $sql;
-    if ( !-e $self->homedb ) {
-        make_path( $self->homedb );
+    my $dirname = dirname($db);
+    if ( !-d $dirname ) {
+        make_path($dirname);
     }
 
     # 例: sqlite3 sample.db < sample.sql
@@ -82,9 +83,9 @@ sub _dump {
 
 sub _restore {
     my ( $self, @args ) = @_;
-    my $db_file = $self->db_file;
     my $db      = $self->db_file_path;
     my $dump    = $self->dump_file_path;
+    my $db_file = basename($db);
     die "not file: $!: $dump" if !-e $dump;
     if ( -e $db ) {
         unlink $db;
