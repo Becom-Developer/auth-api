@@ -35,29 +35,33 @@ subtest 'build' => sub {
     remove_tree("$FindBin::RealBin/../test/");
 };
 
-# my $tmp = File::Temp->new(
-#     TEMPLATE => 'sampleXXXXX',
-#     DIR      => "$FindBin::RealBin/",
-#     SUFFIX   => '.db'
-# );
-# my $filename = $tmp->filename;
-# warn Dumper $filename;
-# subtest 'insert' => sub {
-#     my $hash = $obj->start(
-#         {
-#             method => 'insert',
-#             params => {
-#                 csv   => 'user-test.csv',
-#                 table => 'user',
-#                 cols  => [
-#                     'loginid',    'password', 'approved', 'deleted',
-#                     'created_ts', 'modified_ts',
-#                 ]
-#             }
-#         }
-#     );
-#     like( $hash->{message}, qr/success/, 'success insert' );
-# };
+subtest 'build_insert' => sub {
+    my $tmp = File::Temp->new(
+        TEMPLATE => 'sampleXXXXX',
+        DIR      => "$FindBin::RealBin/",
+        SUFFIX   => '.db',
+        EXLOCK   => 0,
+        UNLINK   => 1,
+    );
+    my $db   = $tmp->filename;
+    my $args = +{
+        db_file_path  => $db,
+        sql_file_path => "$FindBin::RealBin/test.sql",
+    };
+    new_ok( 'SQLite::Simple' => [$args] )->build();
+    my $params = +{
+        csv   => "$FindBin::RealBin/test.csv",
+        table => 'user',
+        cols  => [
+            'loginid',    'password', 'approved', 'deleted',
+            'created_ts', 'modified_ts',
+        ],
+        time_stamp => [ 'created_ts', 'modified_ts', ],
+    };
+    my $hash = new_ok( 'SQLite::Simple' => [$args] )->build_insert($params);
+    like( $hash->{message}, qr/success/, 'success insert' );
+};
+
 # subtest 'dump' => sub {
 #     my $hash = $obj->start( { method => 'dump', } );
 #     like( $hash->{message}, qr/success/, 'success dump' );
