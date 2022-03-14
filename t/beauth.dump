@@ -1,0 +1,54 @@
+PRAGMA foreign_keys=OFF;
+BEGIN TRANSACTION;
+CREATE TABLE user (                                       -- ユーザー
+    `id`              INTEGER PRIMARY KEY AUTOINCREMENT,  -- ID (例: 5)
+    `loginid`         TEXT,                               -- ログインID名 (例: 'info@gmail.com')
+    `password`        TEXT,                               -- ログインパスワード (例: 'info')
+    `approved`        INTEGER,                            -- 承認フラグ (例: 0: 承認していない, 1: 承認済み)
+    `deleted`         INTEGER,                            -- 削除フラグ (例: 0: 削除していない, 1: 削除済み)
+    `created_ts`      TEXT,                               -- 登録日時 (例: '2022-01-23 23:49:12')
+    `modified_ts`     TEXT                                -- 修正日時 (例: '2022-01-23 23:49:12')
+);
+INSERT INTO user VALUES(1,'becom.root@gmail.com','root',1,0,'2022-03-14 21:05:56','2022-03-14 21:05:56');
+INSERT INTO user VALUES(2,'becom.sudo@gmail.com','sudo',1,0,'2022-03-14 21:05:56','2022-03-14 21:05:56');
+INSERT INTO user VALUES(3,'becom.admin@gmail.com','admin',1,0,'2022-03-14 21:05:56','2022-03-14 21:05:56');
+INSERT INTO user VALUES(4,'becom.general@gmail.com','general',1,0,'2022-03-14 21:05:56','2022-03-14 21:05:56');
+INSERT INTO user VALUES(5,'becom.guest@gmail.com','guest',1,0,'2022-03-14 21:05:56','2022-03-14 21:05:56');
+INSERT INTO user VALUES(6,'becom.osomatu@gmail.com','osomatu',1,0,'2022-03-14 21:05:56','2022-03-14 21:05:56');
+INSERT INTO user VALUES(7,'becom.karamatu@gmail.com','karamatu',1,0,'2022-03-14 21:05:56','2022-03-14 21:05:56');
+INSERT INTO user VALUES(8,'becom.tyoromatu@gmail.com','tyoromatu',1,0,'2022-03-14 21:05:56','2022-03-14 21:05:56');
+INSERT INTO user VALUES(9,'becom.itimatu@gmail.com','itimatu',1,0,'2022-03-14 21:05:56','2022-03-14 21:05:56');
+INSERT INTO user VALUES(10,'becom.zyuusimatu@gmail.com','zyuusimatu',1,0,'2022-03-14 21:05:56','2022-03-14 21:05:56');
+INSERT INTO user VALUES(11,'becom.todomatu@gmail.com','todomatu',1,1,'2022-03-14 21:05:56','2022-03-14 21:05:56');
+CREATE TABLE `login` (                                  -- ログイン
+    `id`            INTEGER PRIMARY KEY AUTOINCREMENT,  -- ID (例: 5)
+    `sid`           TEXT,                               -- セッションID名 (例: 'sessionnumber')
+    `loginid`       TEXT,                               -- ログインID名 (例: 'info@gmail.com')
+    `loggedin`      INTEGER,                            -- 認証フラグ (例: 0: ログインしていない, 1: ログインしている)
+    `expiry_ts`     TEXT,                               -- 有効期限 (例: '2022-02-23 23:49:12')
+    `deleted`       INTEGER,                            -- 削除フラグ (例: 0: 削除していない, 1: 削除済み)
+    `created_ts`    TEXT,                               -- 登録日時 (例: '2022-01-23 23:49:12')
+    `modified_ts`   TEXT                                -- 修正日時 (例: '2022-01-23 23:49:12')
+);
+CREATE TABLE `webapi` (                                 -- apikey管理
+    `id`            INTEGER PRIMARY KEY AUTOINCREMENT,  -- ID (例: 5)
+    `apikey`        TEXT,                               -- 接続キー (例: 'sessionnumber')
+    `loginid`       TEXT,                               -- ログインID名 (例: 'info@gmail.com')
+    `target`        TEXT,                               -- 対象のアプリケーション (例: 'zsearch')
+    `is_available`  INTEGER,                            -- 利用可能フラグ (例: 0: 利用不能, 1: 利用可能)
+    `expiry_ts`     TEXT,                               -- 有効期限 (例: '2022-02-23 23:49:12')
+    `deleted`       INTEGER,                            -- 削除フラグ (例: 0: 削除していない, 1: 削除済み)
+    `created_ts`    TEXT,                               -- 登録日時 (例: '2022-01-23 23:49:12')
+    `modified_ts`   TEXT                                -- 修正日時 (例: '2022-01-23 23:49:12')
+);
+CREATE TABLE `limitation` (                             -- 制限
+    `id`            INTEGER PRIMARY KEY AUTOINCREMENT,  -- ID (例: 5)
+    `loginid`       INTEGER,                            -- ログインID名 (例: 'info@gmail.com')
+    `status`        INTEGER,                            -- ステータス (例: 1**: 管理者, 2**: 一般)
+    `deleted`       INTEGER,                            -- 削除フラグ (例: 0: 削除していない, 1: 削除済み)
+    `created_ts`    TEXT,                               -- 登録日時 (例: '2022-01-23 23:49:12')
+    `modified_ts`   TEXT                                -- 修正日時 (例: '2022-01-23 23:49:12')
+);
+DELETE FROM sqlite_sequence;
+INSERT INTO sqlite_sequence VALUES('user',11);
+COMMIT;

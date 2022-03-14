@@ -24,31 +24,32 @@ subtest 'args' => sub {
     is( $obj->sql_file_path, 'sample.sql',   "sql_file_path" );
 };
 
-subtest 'build' => sub {
-    my $args = +{
-        db_file_path  => "$FindBin::RealBin/../test/sample.db",
-        sql_file_path => "$FindBin::RealBin/test.sql",
-    };
-    my $hash = new_ok( 'SQLite::Simple' => [$args] )->build();
-    like( $hash->{message}, qr/success/,   'success init' );
-    like( $hash->{message}, qr/sample.db/, 'success init' );
-    remove_tree("$FindBin::RealBin/../test/");
-};
-
-subtest 'build_insert' => sub {
-    my $tmp = File::Temp->new(
+subtest 'build insert dump restore' => sub {
+    my $tmp_db = File::Temp->new(
         TEMPLATE => 'sampleXXXXX',
         DIR      => "$FindBin::RealBin/",
         SUFFIX   => '.db',
         EXLOCK   => 0,
         UNLINK   => 1,
     );
-    my $db   = $tmp->filename;
+    my $db       = $tmp_db->filename;
+    my $tmp_dump = File::Temp->new(
+        TEMPLATE => 'sampleXXXXX',
+        DIR      => "$FindBin::RealBin/",
+        SUFFIX   => '.dump',
+        EXLOCK   => 0,
+        UNLINK   => 1,
+    );
+    my $dump = $tmp_dump->filename;
     my $args = +{
-        db_file_path  => $db,
-        sql_file_path => "$FindBin::RealBin/test.sql",
+        db_file_path   => $db,
+        sql_file_path  => "$FindBin::RealBin/test.sql",
+        dump_file_path => $dump,
     };
-    new_ok( 'SQLite::Simple' => [$args] )->build();
+    my $obj       = new_ok( 'SQLite::Simple' => [$args] );
+    my $build_msg = $obj->build();
+    like( $build_msg->{message}, qr/success/, 'success init' );
+    like( $build_msg->{message}, qr/sample/,  'success init' );
     my $params = +{
         csv   => "$FindBin::RealBin/test.csv",
         table => 'user',
@@ -58,21 +59,13 @@ subtest 'build_insert' => sub {
         ],
         time_stamp => [ 'created_ts', 'modified_ts', ],
     };
-    my $hash = new_ok( 'SQLite::Simple' => [$args] )->build_insert($params);
-    like( $hash->{message}, qr/success/, 'success insert' );
+    my $insert_msg = $obj->build_insert($params);
+    like( $insert_msg->{message}, qr/success/, 'success insert' );
+    my $dump_msg = $obj->build_dump();
+    like( $dump_msg->{message}, qr/success/, 'success dump' );
+    my $restore = $obj->build_restore();
+    like( $restore->{message}, qr/success/, 'success restore' );
 };
-
-# subtest 'dump' => sub {
-#     my $hash = $obj->start( { method => 'dump', } );
-#     like( $hash->{message}, qr/success/, 'success dump' );
-# };
-# subtest 'restore' => sub {
-#     my $db = $obj->db_file_path;
-#     unlink $db;
-#     ok( !-e $db, "delete db file" );
-#     my $hash = $obj->start( { method => 'restore', } );
-#     like( $hash->{message}, qr/success/, 'success restore' );
-# };
 
 done_testing;
 

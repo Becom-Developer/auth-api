@@ -204,16 +204,19 @@ sub where_clause {
 }
 
 # file
-sub home           { File::Spec->catfile( $FindBin::RealBin, '..' ); }
-sub homedb         { File::Spec->catfile( home(),            'db' ); }
-sub homebackup     { File::Spec->catfile( home(),            'backup' ); }
-sub db_file_path   { File::Spec->catfile( homedb(),          db_file() ); }
-sub sql_file_path  { File::Spec->catfile( home(),            'beauth.sql' ); }
-sub dump_file_path { File::Spec->catfile( homebackup(),      dump_file() ); }
+sub home          { File::Spec->catfile( $FindBin::RealBin, '..' ); }
+sub homedb        { File::Spec->catfile( home(),            'db' ); }
+sub homebackup    { File::Spec->catfile( home(),            'backup' ); }
+sub db_file_path  { File::Spec->catfile( homedb(),          db_file() ); }
+sub sql_file_path { File::Spec->catfile( home(),            'beauth.sql' ); }
 
-sub dump_file {
-    return 'beauth-test.dump' if is_test_mode();
-    return 'beauth.dump';
+sub dump_file_path {
+    return $ENV{"BEAUTH_DUMP"} if $ENV{"BEAUTH_DUMP"};
+    my $name = 'beauth.dump';
+    if ( is_test_mode() ) {
+        $name = 'beauth-test.dump';
+    }
+    return File::Spec->catfile( homebackup(), $name );
 }
 
 sub db_file {

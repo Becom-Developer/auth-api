@@ -5,6 +5,7 @@ use warnings;
 use utf8;
 use File::Path qw(make_path);
 use Text::CSV;
+use File::Basename;
 
 sub start {
     my ( $self, @args ) = @_;
@@ -69,8 +70,8 @@ sub _insert {
 sub _dump {
     my ( $self, @args ) = @_;
     my $db        = $self->db_file_path;
-    my $dump_file = $self->dump_file;
     my $dump      = $self->dump_file_path;
+    my $dump_file = basename($dump);
     die "not file: $!: $db" if !-e $db;
 
     # 例: sqlite3 sample.db .dump > sample.dump

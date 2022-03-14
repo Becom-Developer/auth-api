@@ -13,6 +13,14 @@ use Beauth;
 use Beauth::Render;
 use Beauth::CLI;
 $ENV{"BEAUTH_MODE"} = 'test';
+$ENV{"BEAUTH_DUMP"} = File::Spec->catfile( $FindBin::RealBin, 'beauth.dump' );
+
+# 環境変数
+# BEAUTH_MODE 実行モード
+# BEAUTH_HOME プロジェクトのパス
+# BEAUTH_DB データベースファイルのパス
+# BEAUTH_SQL SQLファイルのパス
+# BEAUTH_DUMP SQL dumpファイルのパス
 
 subtest 'File' => sub {
     my $script =
@@ -26,8 +34,8 @@ subtest 'Class and Method' => sub {
     my @methods = (
         'new',           'time_stamp',     'is_test_mode', 'dump',
         'home',          'homedb',         'homebackup',   'db_file_path',
-        'sql_file_path', 'dump_file_path', 'dump_file',    'db_file',
-        'insert_csv',    'build_dbh'
+        'sql_file_path', 'dump_file_path', 'db_file',      'insert_csv',
+        'build_dbh'
     );
     can_ok( new_ok('Beauth'),         (@methods) );
     can_ok( new_ok('Beauth::Render'), (@methods) );

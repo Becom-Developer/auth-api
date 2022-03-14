@@ -9,17 +9,16 @@ use Text::CSV;
 use File::Path qw(make_path remove_tree);
 use File::Basename;
 
-# sub new { bless {}, shift; }
-
 sub new {
     my $class = shift;
     my $args  = shift || {};
     return bless $args, $class;
 }
 
-sub db_file_path  { shift->{db_file_path}; }
-sub sql_file_path { shift->{sql_file_path}; }
-sub time_stamp    { localtime->datetime( 'T' => ' ' ); }
+sub db_file_path   { shift->{db_file_path}; }
+sub sql_file_path  { shift->{sql_file_path}; }
+sub dump_file_path { shift->{dump_file_path}; }
+sub time_stamp     { localtime->datetime( 'T' => ' ' ); }
 
 sub build_dbh {
     my ( $self, @args ) = @_;
@@ -44,7 +43,7 @@ sub build {
         make_path($dirname);
     }
 
-    # for example: sqlite3 sample.db < sample.sql
+    # example: sqlite3 sample.db < sample.sql
     my $cmd = "sqlite3 $db < $sql";
     system $cmd and die "Couldn'n run: $cmd ($!)";
     return +{ message => qq{build success $db_file} };
@@ -92,6 +91,37 @@ sub build_insert {
     }
     $fh->close;
     return +{ message => qq{insert success $path} };
+}
+
+sub build_dump {
+    my ( $self, @args ) = @_;
+    my $db        = $self->db_file_path;
+    my $dump      = $self->dump_file_path;
+    my $dump_file = basename($dump);
+
+    die "not file: $!: $db" if !-e $db;
+
+    # 例: sqlite3 sample.db .dump > sample.dump
+    my $cmd = "sqlite3 $db .dump > $dump";
+    system $cmd and die "Couldn'n run: $cmd ($!)";
+    return +{ message => qq{dump success $dump_file} };
+}
+
+sub build_restore {
+    my ( $self, @args ) = @_;
+    my $db      = $self->db_file_path;
+    my $dump    = $self->dump_file_path;
+    my $db_file = basename($db);
+
+    die "not file: $!: $dump" if !-e $dump;
+    if ( -e $db ) {
+        unlink $db;
+    }
+
+    # example: sqlite3 sample.db < sample.dump
+    my $cmd = "sqlite3 $db < $dump";
+    system $cmd and die "Couldn'n run: $cmd ($!)";
+    return +{ message => qq{restore success $db_file} };
 }
 
 1;
