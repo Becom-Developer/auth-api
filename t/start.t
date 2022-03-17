@@ -13,10 +13,7 @@ use Beauth;
 use Beauth::Render;
 use Beauth::CLI;
 use File::Temp qw/ tempfile tempdir /;
-my $temp = File::Temp->newdir(
-    DIR     => $FindBin::RealBin,
-    CLEANUP => 1,
-);
+my $temp     = File::Temp->newdir( DIR => $FindBin::RealBin, CLEANUP => 1, );
 my $test_dir = $temp->dirname;
 $ENV{"BEAUTH_MODE"} = 'test';
 $ENV{"BEAUTH_DUMP"} = File::Spec->catfile( $test_dir, 'beauth.dump' );
@@ -41,7 +38,7 @@ subtest 'Class and Method' => sub {
     my @methods = (
         'new',           'time_stamp',     'is_test_mode', 'dump',
         'home',          'homedb',         'homebackup',   'db_file_path',
-        'sql_file_path', 'dump_file_path', 'insert_csv',   'build_dbh'
+        'sql_file_path', 'dump_file_path', 'build_dbh'
     );
     can_ok( new_ok('Beauth'),         (@methods) );
     can_ok( new_ok('Beauth::Render'), (@methods) );
@@ -51,7 +48,6 @@ subtest 'Class and Method' => sub {
     can_ok( new_ok('Beauth::CLI'),    (@methods) );
     can_ok( new_ok('Beauth::Login'),  (@methods) );
     can_ok( new_ok('Beauth::Webapi'), (@methods) );
-    new_ok('Beauth::DB');
 };
 
 subtest 'Framework Render' => sub {
@@ -94,17 +90,19 @@ subtest 'Framework Build' => sub {
         like( $hash->{message}, qr/success/, 'success init' );
     };
     subtest 'insert' => sub {
+        my $csv  = File::Spec->catfile( $FindBin::RealBin, 'user-test.csv' );
         my $hash = $obj->start(
             {
                 method => 'insert',
                 params => {
-                    csv   => 'user-test.csv',
+                    csv   => $csv,
                     table => 'user',
                     cols  => [
                         'loginid',    'password',
                         'approved',   'deleted',
                         'created_ts', 'modified_ts',
-                    ]
+                    ],
+                    time_stamp => [ 'created_ts', 'modified_ts', ],
                 }
             }
         );

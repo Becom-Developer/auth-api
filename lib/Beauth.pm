@@ -15,7 +15,7 @@ use Beauth::Error;
 use Beauth::User;
 use Beauth::Login;
 use Beauth::Webapi;
-use Beauth::DB;
+use SQLite::Simple;
 
 # class
 sub new    { bless {}, shift; }
@@ -24,10 +24,25 @@ sub error  { Beauth::Error->new }
 sub user   { Beauth::User->new }
 sub login  { Beauth::Login->new }
 sub webapi { Beauth::Webapi->new }
-sub db     { Beauth::DB->new }
 
 # helper
 sub time_stamp { localtime->datetime( 'T' => ' ' ); }
+
+sub db {
+    my ( $self, $args ) = @_;
+    if ( !$args ) {
+        $args = {};
+    }
+    my $simple = SQLite::Simple->new(
+        {
+            db_file_path   => $self->db_file_path,
+            sql_file_path  => $self->sql_file_path,
+            dump_file_path => $self->dump_file_path,
+            %{$args},
+        }
+    );
+    return $simple;
+}
 
 sub session_id {
     my ( $self, @args ) = @_;
@@ -211,21 +226,12 @@ sub sql_file_path { File::Spec->catfile( home(),            'beauth.sql' ); }
 
 sub dump_file_path {
     return $ENV{"BEAUTH_DUMP"} if $ENV{"BEAUTH_DUMP"};
-    my $name = 'beauth.dump';
-    return File::Spec->catfile( homebackup(), $name );
+    return File::Spec->catfile( homebackup(), 'beauth.dump' );
 }
 
 sub db_file_path {
     return $ENV{"BEAUTH_DB"} if $ENV{"BEAUTH_DB"};
-    my $name = 'beauth.db';
-    return File::Spec->catfile( homedb(), $name );
-}
-
-sub insert_csv {
-    my ( $self, @args ) = @_;
-    my $name = shift @args;
-    return File::Spec->catfile( homebackup(), $name ) if is_test_mode();
-    return File::Spec->catfile( homebackup(), $name );
+    return File::Spec->catfile( homedb(), 'beauth.db' );
 }
 
 sub build_dbh {

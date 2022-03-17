@@ -25,10 +25,7 @@ subtest 'args' => sub {
 };
 
 subtest 'build insert dump restore' => sub {
-    my $temp = File::Temp->newdir(
-        DIR     => $FindBin::RealBin,
-        CLEANUP => 1,
-    );
+    my $temp = File::Temp->newdir( DIR => $FindBin::RealBin, CLEANUP => 1, );
     my $test_dir = $temp->dirname;
     my $dump     = File::Spec->catfile( $test_dir,         'sample.dump' );
     my $db       = File::Spec->catfile( $test_dir,         'sample.db' );
