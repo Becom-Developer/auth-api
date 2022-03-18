@@ -40,7 +40,7 @@ sub _signup {
         }
     );
     my $limitation = $self->safe_insert( 'limitation',
-        +{ loginid => $loginid, status => $params->{limitation}, } );
+        +{ loginid => $loginid, status => $params->{limitation} || '200', } );
     return { sid => $login->{sid} };
 }
 

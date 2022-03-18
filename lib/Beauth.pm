@@ -171,6 +171,12 @@ sub rows {
     return $arrey_ref;
 }
 
+sub valid_search {
+    my ( $self, $table, $params ) = @_;
+    my $q_params = +{ %{$params}, deleted => 0, };
+    return $self->db->search( $table, $q_params );
+}
+
 sub db_insert {
     my ( $self, @args ) = @_;
     my ( $table, $cols, $data ) = @args;
