@@ -57,6 +57,48 @@ subtest 'build insert dump restore' => sub {
     like( $restore->{message}, qr/success/, 'success restore' );
 };
 
+subtest 'db access' => sub {
+    my $temp = File::Temp->newdir( DIR => $FindBin::RealBin, CLEANUP => 1, );
+    my $test_dir = $temp->dirname;
+    my $dump     = File::Spec->catfile( $test_dir,         'sample.dump' );
+    my $db       = File::Spec->catfile( $test_dir,         'sample.db' );
+    my $sql      = File::Spec->catfile( $FindBin::RealBin, 'test.sql' );
+    my $args     = +{
+        db_file_path   => $db,
+        sql_file_path  => $sql,
+        dump_file_path => $dump,
+    };
+    my $obj = new_ok( 'SQLite::Simple' => [$args] );
+    $obj->build();
+    subtest 'insert to update' => sub {
+        my $table  = 'user';
+        my $params = +{
+            loginid     => 'sample@gmail.com',
+            password    => 'sample',
+            approved    => '1',
+            deleted     => '0',
+            created_ts  => '2022-03-17 17:25:58',
+            modified_ts => '2022-03-17 17:25:58',
+        };
+        my $insert = $obj->insert( $table, $params );
+        while ( my ( $key, $val ) = each %{$params} ) {
+            is( $insert->{$key}, $params->{$key}, $key );
+        }
+        my $db_obj =
+          $obj->single_to( $table, { loginid => $params->{loginid} } );
+        my $update_ref;
+        my $update_params = { password => 'sampleupdate', };
+        if ( $db_obj->exist_params ) {
+            $update_ref = $db_obj->update($update_params);
+        }
+        is( $update_ref->{password}, $update_params->{password}, 'password' );
+        my @dummy_single = ( $table, { loginid => 'dummy' } );
+        my $dummy_update = { password => 'sampledummy', };
+        my $to_update = $obj->single_to(@dummy_single)->update($dummy_update);
+        is( $to_update, undef, 'to_update' );
+    };
+};
+
 done_testing;
 
 __END__
@@ -79,9 +121,12 @@ sub db {
 # $self->db->build_dump();
 # $self->db->build_restore();
 
-# $self->db->insert($table, \%params);
-# $self->db->single($table, \%params);
-# $self->db->search($table, \%params);
-# $self->db->update($table, \%params);
-# my $row = $self->db->row($table, \%params);
-# $row->update(\%params);
+# my $hash_ref = $self->db->insert($table, \%params);
+# my $hash_ref = $self->db->single($table, \%params);
+# my $hash_ref = $self->db->search($table, \%params);
+# my $obj = $self->db->single_to($table, \%params);
+# if ($obj->exist_params) {
+#   $obj->update(\%set_params);
+# }
+# my $update_ref = $self->db->single_to($table, \%params)->update(\%set_params);
+

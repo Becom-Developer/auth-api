@@ -18,7 +18,24 @@ sub new {
 sub db_file_path   { shift->{db_file_path}; }
 sub sql_file_path  { shift->{sql_file_path}; }
 sub dump_file_path { shift->{dump_file_path}; }
-sub time_stamp     { localtime->datetime( 'T' => ' ' ); }
+
+sub single_result {
+    my $self = shift;
+    if (@_) {
+        $self->{single_result} = $_[0];
+    }
+    return $self->{single_result};
+}
+
+sub exist_params {
+    my $self = shift;
+    if (@_) {
+        $self->{exist_params} = $_[0];
+    }
+    return $self->{exist_params};
+}
+
+sub time_stamp { localtime->datetime( 'T' => ' ' ); }
 
 sub build_dbh {
     my ( $self, @args ) = @_;
@@ -98,7 +115,6 @@ sub build_dump {
     my $db        = $self->db_file_path;
     my $dump      = $self->dump_file_path;
     my $dump_file = basename($dump);
-
     die "not file: $!: $db" if !-e $db;
 
     # 例: sqlite3 sample.db .dump > sample.dump
@@ -121,6 +137,95 @@ sub build_restore {
     my $cmd = "sqlite3 $db < $dump";
     system $cmd and die "Couldn'n run: $cmd ($!)";
     return +{ message => qq{restore success $db_file} };
+}
+
+# $self->db->insert($table, \%params);
+sub insert {
+    my ( $self, @args )    = @_;
+    my ( $table, $params ) = @args;
+    my $cols = [];
+    my $data = [];
+    while ( my ( $key, $val ) = each %{$params} ) {
+        push @{$cols}, $key;
+        push @{$data}, $val;
+    }
+    my $col    = join ",", @{$cols};
+    my $values = join ",", map { '?' } @{$cols};
+    my $sql    = qq{INSERT INTO $table ($col) VALUES ($values)};
+    my $dbh    = $self->build_dbh;
+    my $sth    = $dbh->prepare($sql);
+    $sth->execute( @{$data} ) or die $dbh->errstr;
+    my $id     = $dbh->last_insert_id( undef, undef, undef, undef );
+    my $create = $self->single( $table, { id => $id } );
+    return $create;
+}
+
+# $self->db->single($table, \%params);
+sub single {
+    my ( $self,  @args )   = @_;
+    my ( $table, $params ) = @args;
+    my $sql_q = [];
+    while ( my ( $key, $val ) = each %{$params} ) {
+        push @{$sql_q}, qq{$key = "$val"};
+    }
+    my $sql_clause = join " AND ", @{$sql_q};
+    my $sql        = qq{SELECT * FROM $table WHERE $sql_clause};
+    my $dbh        = $self->build_dbh;
+    return $dbh->selectrow_hashref($sql);
+}
+
+# my $obj = $self->db->single_to($table, \%params);
+sub single_to {
+    my ( $self,  @args )   = @_;
+    my ( $table, $params ) = @args;
+    my $hash = $self->single( $table, $params );
+    $self->exist_params(0);
+    if ($hash) {
+        $self->exist_params(1);
+    }
+    $self->single_result( { table => $table, params => $hash } );
+    return $self;
+}
+
+# my $update_ref = $self->db->single_to($table, \%params)->update(\%set_params);
+sub update {
+    my ( $self, @args ) = @_;
+    my $params        = shift @args;
+    my $single_result = $self->single_result;
+    return if !$single_result;
+    return if !$self->exist_params;
+    my $update_id    = $single_result->{params}->{id};
+    my $table        = $single_result->{table};
+    my $set_clause   = $self->set_clause($params);
+    my $where_clause = $self->where_clause( { id => $update_id } );
+    my $sql          = qq{UPDATE $table SET $set_clause WHERE $where_clause};
+    my $dbh          = $self->build_dbh;
+    my $sth          = $dbh->prepare($sql);
+    $sth->execute() or die $dbh->errstr;
+    my $update = $self->single( $table, { id => $update_id } );
+    return $update;
+}
+
+sub set_clause {
+    my ( $self, @args ) = @_;
+    my $params = shift @args;
+    my $set_q  = [];
+    while ( my ( $key, $val ) = each %{$params} ) {
+        push @{$set_q}, qq{$key = "$val"};
+    }
+    my $set_clause = join ",", @{$set_q};
+    return $set_clause;
+}
+
+sub where_clause {
+    my ( $self, @args ) = @_;
+    my $params  = shift @args;
+    my $where_q = [];
+    while ( my ( $key, $val ) = each %{$params} ) {
+        push @{$where_q}, qq{$key = "$val"};
+    }
+    my $where_clause = join " AND ", @{$where_q};
+    return $where_clause;
 }
 
 1;
