@@ -38,7 +38,7 @@ subtest 'Class and Method' => sub {
     my @methods = (
         'new',           'time_stamp',     'is_test_mode', 'dump',
         'home',          'homedb',         'homebackup',   'db_file_path',
-        'sql_file_path', 'dump_file_path', 'build_dbh'
+        'sql_file_path', 'dump_file_path',
     );
     can_ok( new_ok('Beauth'),         (@methods) );
     can_ok( new_ok('Beauth::Render'), (@methods) );

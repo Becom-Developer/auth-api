@@ -102,12 +102,7 @@ sub _get {
     return if $self->_valid($params);
     my $table   = 'user';
     my $loginid = $params->{loginid};
-
-
-    my $row      = $self->valid_single( $table, { loginid => $loginid } );
-
-
-    # my $row     = $self->single( $table, ['loginid'], $params );
+    my $row     = $self->valid_single( $table, { loginid => $loginid } );
     return $self->error->commit("not exist user: $loginid") if !$row;
     return $row;
 }

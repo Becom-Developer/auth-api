@@ -90,7 +90,8 @@ sub dump {
 sub is_root {
     my ( $self, @args ) = @_;
     my $params = shift @args;
-    my $row    = $self->single( 'limitation', ['loginid'], $params );
+    my $row =
+      $self->valid_single( 'limitation', { loginid => $params->{loginid} } );
     return   if !$row;
     return 1 if $row->{status} eq '100';
     return;
@@ -99,7 +100,8 @@ sub is_root {
 sub is_general {
     my ( $self, @args ) = @_;
     my $params = shift @args;
-    my $row    = $self->single( 'limitation', ['loginid'], $params );
+    my $row =
+      $self->valid_single( 'limitation', { loginid => $params->{loginid} } );
     return   if !$row;
     return 1 if $row->{status} eq '200';
     return;
@@ -107,9 +109,9 @@ sub is_general {
 
 sub sid_to_loginid {
     my ( $self, @args ) = @_;
-    my $params   = shift @args;
-    my $q_params = { %{$params}, loggedin => "1", };
-    my $row      = $self->single( 'login', [ 'sid', 'loggedin' ], $q_params );
+    my $params = shift @args;
+    my $row =
+      $self->valid_single( 'login', { sid => $params->{sid}, loggedin => 1, } );
     return                 if !$row;
     return $row->{loginid} if $row;
 }
@@ -126,72 +128,16 @@ sub is_valid_app {
     return;
 }
 
-# $self->single($table, \@cols, \%params);
-sub single {
-    my ( $self, $table, $cols, $params ) = @_;
-    my $sql_q = [];
-    for my $col ( @{$cols} ) {
-        push @{$sql_q}, qq{$col = "$params->{$col}"};
-    }
-    push @{$sql_q}, qq{deleted = 0};
-    my $sql_clause = join " AND ", @{$sql_q};
-    my $sql        = qq{SELECT * FROM $table WHERE $sql_clause};
-    my $dbh        = $self->build_dbh;
-    return $dbh->selectrow_hashref($sql);
-}
-
 sub valid_single {
     my ( $self, $table, $params ) = @_;
     my $q_params = +{ %{$params}, deleted => 0, };
     return $self->db->single( $table, $q_params );
 }
 
-sub valid_single_to {
-    my ( $self, $table, $params ) = @_;
-    my $q_params = +{ %{$params}, deleted => 0, };
-    return $self->db->single_to( $table, $q_params );
-}
-
-# $self->rows($table, \@cols, \%params);
-sub rows {
-    my ( $self, $table, $cols, $params ) = @_;
-    my $sql_q = [];
-    for my $col ( @{$cols} ) {
-        push @{$sql_q}, qq{$col = "$params->{$col}"};
-    }
-    push @{$sql_q}, qq{deleted = 0};
-    my $sql_clause = join " AND ", @{$sql_q};
-    my $sql        = qq{SELECT * FROM $table WHERE $sql_clause};
-    my $dbh        = $self->build_dbh;
-    my $hash       = $dbh->selectall_hashref( $sql, 'id' );
-    my $arrey_ref  = [];
-    for my $key ( sort keys %{$hash} ) {
-        push @{$arrey_ref}, $hash->{$key};
-    }
-    return $arrey_ref;
-}
-
 sub valid_search {
     my ( $self, $table, $params ) = @_;
     my $q_params = +{ %{$params}, deleted => 0, };
     return $self->db->search( $table, $q_params );
-}
-
-sub db_insert {
-    my ( $self, @args ) = @_;
-    my ( $table, $cols, $data ) = @args;
-    my $dt = $self->time_stamp;
-    push @{$cols}, 'deleted', 'created_ts', 'modified_ts';
-    push @{$data}, 0,         $dt,          $dt;
-    my $col    = join ",", @{$cols};
-    my $values = join ",", map { '?' } @{$cols};
-    my $sql    = qq{INSERT INTO $table ($col) VALUES ($values)};
-    my $dbh    = $self->build_dbh;
-    my $sth    = $dbh->prepare($sql);
-    $sth->execute( @{$data} ) or die $dbh->errstr;
-    my $id     = $dbh->last_insert_id( undef, undef, undef, undef );
-    my $create = $self->single( $table, ['id'], { id => $id } );
-    return $create;
 }
 
 sub safe_insert {
@@ -202,24 +148,6 @@ sub safe_insert {
     return $self->db->insert( $table, $insert_params );
 }
 
-sub db_update {
-    my ( $self, @args ) = @_;
-    my ( $update_row, $set_args, $where_args ) = @args;
-    my $table      = $update_row->{table};
-    my $update_id  = $update_row->{row}->{id};
-    my $set_clause = $self->set_clause( @{$set_args} );
-    if ( !$where_args ) {
-        $where_args = [ ['id'], $update_row->{row} ];
-    }
-    my $where_clause = $self->where_clause( @{$where_args} );
-    my $sql          = qq{UPDATE $table SET $set_clause WHERE $where_clause};
-    my $dbh          = $self->build_dbh;
-    my $sth          = $dbh->prepare($sql);
-    $sth->execute() or die $dbh->errstr;
-    my $update = $self->single( $table, ['id'], { id => $update_id } );
-    return $update;
-}
-
 # $self->safe_update($table, \%search_params, \%update_params);
 sub safe_update {
     my ( $self, $table, $search_params, $update_params ) = @_;
@@ -227,30 +155,6 @@ sub safe_update {
     my $q_params = +{ %{$search_params}, deleted     => 0, };
     my $u_params = +{ %{$update_params}, modified_ts => $dt, };
     return $self->db->single_to( $table, $q_params )->update($u_params);
-}
-
-sub set_clause {
-    my ( $self, @args )   = @_;
-    my ( $cols, $params ) = @args;
-    my $dt    = $self->time_stamp;
-    my $set_q = [];
-    for my $col ( @{$cols} ) {
-        push @{$set_q}, qq{$col = "$params->{$col}"};
-    }
-    push @{$set_q}, qq{modified_ts = "$dt"};
-    my $set_clause = join ",", @{$set_q};
-    return $set_clause;
-}
-
-sub where_clause {
-    my ( $self, @args )   = @_;
-    my ( $cols, $params ) = @args;
-    my $where_q = [];
-    for my $col ( @{$cols} ) {
-        push @{$where_q}, qq{$col = "$params->{$col}"};
-    }
-    my $where_clause = join " AND ", @{$where_q};
-    return $where_clause;
 }
 
 # file
@@ -267,18 +171,6 @@ sub dump_file_path {
 sub db_file_path {
     return $ENV{"BEAUTH_DB"} if $ENV{"BEAUTH_DB"};
     return File::Spec->catfile( homedb(), 'beauth.db' );
-}
-
-sub build_dbh {
-    my ( $self, @args ) = @_;
-    my $db   = $self->db_file_path;
-    my $attr = +{
-        RaiseError     => 1,
-        AutoCommit     => 1,
-        sqlite_unicode => 1,
-    };
-    my $dbh = DBI->connect( "dbi:SQLite:dbname=$db", "", "", $attr );
-    return $dbh;
 }
 
 1;

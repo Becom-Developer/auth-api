@@ -46,18 +46,19 @@ sub _signup {
 
 sub _refresh {
     my ( $self, @args ) = @_;
-    my $options = shift @args;
-    my $params  = $options->{params};
-    my $sid     = $params->{sid};
-    my $simple =
-      $self->valid_single_to( 'login', { sid => $sid, loggedin => 1, } );
-    return $self->error->commit("not exist sid: $sid")
-      if !$simple->exist_params;
+    my $options        = shift @args;
+    my $params         = $options->{params};
+    my $sid            = $params->{sid};
+    my $sid_to_loginid = $self->sid_to_loginid( { sid => $sid } );
+    return $self->error->commit("not exist sid: $sid") if !$sid_to_loginid;
     my $expiry_ts = $self->ts_10_days_later;
-    my $loginid   = $simple->single_result->{params}->{loginid};
-    my $new_sid   = $self->session_id($loginid);
-    my $update    = $simple->update(
-        +{ loggedin => 1, sid => $new_sid, expiry_ts => $expiry_ts, } );
+    my $new_sid   = $self->session_id($sid_to_loginid);
+    my $update    = $self->safe_update(
+        'login',
+        { sid => $sid, loggedin => 1, },
+        { loggedin => 1, sid => $new_sid, expiry_ts => $expiry_ts, }
+    );
+    return $self->error->commit("not exist sid: $sid") if !$update;
     return { sid => $update->{sid} };
 }
 
@@ -73,16 +74,17 @@ sub _start {
     # 過去のログイン履歴
     my $sid       = $self->session_id($loginid);
     my $expiry_ts = $self->ts_10_days_later;
-    my $simple    = $self->valid_single_to( 'login', { loginid => $loginid } );
-    if ( $simple->exist_params ) {
-        my $params = $simple->single_result->{params};
+    my $login     = $self->valid_single( 'login', { loginid => $loginid } );
+    if ($login) {
         return $self->error->commit("You are logged in: $loginid")
-          if $params->{loggedin};
+          if $login->{loggedin};
 
         # 履歴がある場合はアップデートでおこなう
-        my $set_params =
-          +{ loggedin => 1, sid => $sid, expiry_ts => $expiry_ts, };
-        my $update = $simple->update($set_params);
+        my $update = $self->safe_update(
+            'login',
+            { loginid  => $loginid },
+            { loggedin => 1, sid => $sid, expiry_ts => $expiry_ts, }
+        );
         return { sid => $update->{sid} };
     }
     my $create = $self->safe_insert(
