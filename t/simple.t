@@ -94,8 +94,31 @@ subtest 'db access' => sub {
         is( $update_ref->{password}, $update_params->{password}, 'password' );
         my @dummy_single = ( $table, { loginid => 'dummy' } );
         my $dummy_update = { password => 'sampledummy', };
-        my $to_update = $obj->single_to(@dummy_single)->update($dummy_update);
-        is( $to_update, undef, 'to_update' );
+        my $fail = $obj->single_to(@dummy_single)->update($dummy_update);
+        is( $fail, undef, 'to_update' );
+    };
+    subtest 'search' => sub {
+        $obj->build();
+        my $table  = 'user';
+        my $common = +{
+            approved    => '1',
+            deleted     => '0',
+            created_ts  => '2022-03-17 17:25:58',
+            modified_ts => '2022-03-17 17:25:58',
+        };
+        my $user_list = [
+            { loginid => 'sample1@gmail.com', password => 'sample1', },
+            { loginid => 'sample2@gmail.com', password => 'sample2', }
+        ];
+        for my $user ( @{$user_list} ) {
+            my $insert = { %{$user}, %{$common}, };
+            $obj->insert( $table, $insert );
+        }
+        my $arrey_ref =
+          $obj->search( $table, { approved => '1', deleted => '0', } );
+        is( @{$arrey_ref}, 2, 'search' );
+        my $fail = $obj->search( $table, { approved => '1', deleted => '1', } );
+        is( $fail, undef, 'search' );
     };
 };
 
@@ -123,10 +146,9 @@ sub db {
 
 # my $hash_ref = $self->db->insert($table, \%params);
 # my $hash_ref = $self->db->single($table, \%params);
-# my $hash_ref = $self->db->search($table, \%params);
+# my $arrey_ref = $self->db->search($table, \%params);
 # my $obj = $self->db->single_to($table, \%params);
 # if ($obj->exist_params) {
 #   $obj->update(\%set_params);
 # }
 # my $update_ref = $self->db->single_to($table, \%params)->update(\%set_params);
-

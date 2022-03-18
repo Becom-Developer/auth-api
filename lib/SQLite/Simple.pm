@@ -174,6 +174,26 @@ sub single {
     return $dbh->selectrow_hashref($sql);
 }
 
+# my $arrey_ref = $self->db->search($table, \%params);
+sub search {
+    my ( $self,  @args )   = @_;
+    my ( $table, $params ) = @args;
+    my $sql_q = [];
+    while ( my ( $key, $val ) = each %{$params} ) {
+        push @{$sql_q}, qq{$key = "$val"};
+    }
+    my $sql_clause = join " AND ", @{$sql_q};
+    my $sql        = qq{SELECT * FROM $table WHERE $sql_clause};
+    my $dbh        = $self->build_dbh;
+    my $hash       = $dbh->selectall_hashref( $sql, 'id' );
+    return if !%{$hash};
+    my $arrey_ref = [];
+    for my $key ( sort keys %{$hash} ) {
+        push @{$arrey_ref}, $hash->{$key};
+    }
+    return $arrey_ref;
+}
+
 # my $obj = $self->db->single_to($table, \%params);
 sub single_to {
     my ( $self,  @args )   = @_;
