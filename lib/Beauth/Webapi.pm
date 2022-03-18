@@ -20,36 +20,13 @@ sub _delete {
     my $options = shift @args;
     my $params  = $options->{params};
     my $table   = 'webapi';
-    my $row     = $self->single( $table, ['apikey'], $params );
-    return $self->error->commit("not exist $table apikey:") if !$row;
-    my $update_row = { table => $table, row => $row };
-    my $set_args   = [ ['is_available'], { is_available => 0 } ];
-    my $update     = $self->db_update( $update_row, $set_args );
+    my $update = $self->safe_update(
+        $table,
+        { apikey       => $params->{apikey} },
+        { is_available => 0 }
+    );
+    return $self->error->commit("not exist $table apikey:") if !$update;
     return { sid => $params->{sid} };
-    return;
-}
-
-sub _exists_history {
-    my ( $self, @args ) = @_;
-    my $loginid = shift @args;
-    my $target  = shift @args;
-    my $params  = +{ loginid => $loginid, target => $target };
-    return $self->single( 'webapi', [ 'loginid', 'target' ], $params );
-}
-
-sub _update_webapi {
-    my ( $self, @args ) = @_;
-    my $row        = shift @args;
-    my $loginid    = $row->{loginid};
-    my $target     = $row->{target};
-    my $apikey     = $self->apikey( $loginid, $target );
-    my $update_row = { table => 'webapi', row => $row };
-    my $set_args   = [
-        [ 'apikey', 'is_available' ],
-        { apikey => $apikey, is_available => 1, }
-    ];
-    my $update = $self->db_update( $update_row, $set_args );
-    return $update;
 }
 
 sub _issue {
@@ -63,30 +40,41 @@ sub _issue {
       if !$self->is_valid_app($params);
 
     # apikey履歴がある場合はアップデート
-    if ( my $row = $self->_exists_history( $loginid, $target ) ) {
-        my $update = $self->_update_webapi($row);
+    my $webapi = $self->valid_single( 'webapi',
+        { loginid => $loginid, target => $target } );
+    my $apikey    = $self->apikey( $loginid, $target );
+    my $expiry_ts = $self->ts_10_days_later;
+    if ($webapi) {
+        my $update = $self->safe_update(
+            'webapi',
+            { loginid => $loginid, target => $target },
+            { apikey  => $apikey,  is_available => 1, expiry_ts => $expiry_ts }
+        );
         return { sid => $params->{sid}, apikey => $update->{apikey} };
     }
 
     # apikey発行
-    my $apikey    = $self->apikey( $loginid, $target );
-    my $expiry_ts = $self->ts_10_days_later;
-    my $cols = [ 'apikey', 'loginid', 'target', 'is_available', 'expiry_ts', ];
-    my $data = [ $apikey, $loginid, $target, 1, $expiry_ts, ];
-    my $create = $self->db_insert( 'webapi', $cols, $data );
+    my $create = $self->safe_insert(
+        'webapi',
+        +{
+            apikey       => $apikey,
+            loginid      => $loginid,
+            target       => $target,
+            is_available => 1,
+            expiry_ts    => $expiry_ts,
+        }
+    );
     return { sid => $params->{sid}, apikey => $create->{apikey} };
 }
 
 sub _list {
     my ( $self, @args ) = @_;
-    my $options  = shift @args;
-    my $params   = $options->{params};
-    my $loginid  = $self->sid_to_loginid($params);
-    my $table    = 'webapi';
-    my $cols     = [ 'loginid', 'is_available', ];
-    my $q_params = { loginid => $loginid, is_available => 1, };
-    my $rows     = $self->rows( $table, $cols, $q_params );
-    return $self->error->commit("not exist $table: ") if @{$rows} eq 0;
+    my $options = shift @args;
+    my $params  = $options->{params};
+    my $loginid = $self->sid_to_loginid($params);
+    my $table   = 'webapi';
+    my $rows    = $self->valid_search( $table, {} );
+    return $self->error->commit("not exist $table: ") if !$rows;
     return +{
         sid  => $params->{sid},
         list => $rows,

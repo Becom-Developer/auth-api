@@ -39,8 +39,8 @@ sub _list {
     # root 権限のみ有効
     return if $self->_valid($params);
     my $table = 'user';
-    my $rows  = $self->rows( $table, [], {} );
-    return $self->error->commit("not exist $table: ") if @{$rows} eq 0;
+    my $rows  = $self->valid_search( $table, {} );
+    return $self->error->commit("not exist $table: ") if !$rows;
     return $rows;
 }
 
@@ -51,13 +51,10 @@ sub _delete {
 
     # root 権限のみ有効
     return if $self->_valid($params);
-    my $id    = $params->{id};
-    my $table = 'user';
-    my $row   = $self->single( $table, ['id'], $params );
-    return $self->error->commit("not exist $table id: $id") if !$row;
-    my $update_row = { table => $table, row => $row };
-    my $set_args   = [ ['deleted'], { deleted => 1 } ];
-    my $update     = $self->db_update( $update_row, $set_args );
+    my $id     = $params->{id};
+    my $table  = 'user';
+    my $update = $self->safe_update( $table, { id => $id }, { deleted => 1 } );
+    return $self->error->commit("not exist $table id: $id") if !$update;
     return {};
 }
 
@@ -68,12 +65,12 @@ sub _update {
 
     # root 権限のみ有効
     return if $self->_valid($params);
-    my $table = 'user';
-    my $row   = $self->single( $table, ['id'], $params );
-    return $self->error->commit("not exist $table id: $params->{id}") if !$row;
-    my $update_row = { table => $table, row => $row };
-    my $set_args   = [ ['password'], $params ];
-    my $update     = $self->db_update( $update_row, $set_args );
+    my $id       = $params->{id};
+    my $password = $params->{password};
+    my $table    = 'user';
+    my $update =
+      $self->safe_update( $table, { id => $id }, { password => $password } );
+    return $self->error->commit("not exist $table id: $id") if !$update;
     return $update;
 }
 
@@ -87,16 +84,12 @@ sub _insert {
     my $table    = 'user';
     my $loginid  = $params->{loginid};
     my $password = $params->{password};
-    my $row      = $self->single( $table, ['loginid'], $params );
+    my $row      = $self->valid_single( $table, { loginid => $loginid } );
     return $self->error->commit("exist $table: $loginid") if $row;
-    my $cols       = [ 'loginid', 'password', 'approved' ];
-    my $data       = [ $loginid, $password, 1 ];
-    my $create     = $self->db_insert( $table, $cols, $data );
-    my $limitation = $self->db_insert(
-        'limitation',
-        [ 'loginid', 'status' ],
-        [ $loginid,  $params->{limitation} || '200' ]
-    );
+    my $create = $self->safe_insert( $table,
+        +{ loginid => $loginid, password => $password, approved => 1, } );
+    my $limitation = $self->safe_insert( 'limitation',
+        +{ loginid => $loginid, status => $params->{limitation} || '200', } );
     return $create;
 }
 
@@ -109,7 +102,7 @@ sub _get {
     return if $self->_valid($params);
     my $table   = 'user';
     my $loginid = $params->{loginid};
-    my $row     = $self->single( $table, ['loginid'], $params );
+    my $row     = $self->valid_single( $table, { loginid => $loginid } );
     return $self->error->commit("not exist user: $loginid") if !$row;
     return $row;
 }
