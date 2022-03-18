@@ -24,23 +24,23 @@ sub _signup {
     my $table    = 'user';
     my $loginid  = $params->{loginid};
     my $password = $params->{password};
-    my $row      = $self->single( $table, ['loginid'], $params );
+    my $row      = $self->valid_single( $table, { loginid => $loginid } );
     return $self->error->commit("exist $table: $loginid") if $row;
-    my $cols      = [ 'loginid', 'password', 'approved' ];
-    my $data      = [ $loginid, $password, 1 ];
-    my $create    = $self->db_insert( $table, $cols, $data );
+    my $create = $self->safe_insert( $table,
+        +{ loginid => $loginid, password => $password, approved => 1, } );
     my $expiry_ts = $self->ts_10_days_later;
     my $sid       = $self->session_id($loginid);
-    my $login     = $self->db_insert(
+    my $login     = $self->safe_insert(
         'login',
-        [ 'sid', 'loginid', 'loggedin', 'expiry_ts', ],
-        [ $sid,  $loginid,  1,          $expiry_ts, ]
+        +{
+            sid       => $sid,
+            loginid   => $loginid,
+            loggedin  => 1,
+            expiry_ts => $expiry_ts
+        }
     );
-    my $limitation = $self->db_insert(
-        'limitation',
-        [ 'loginid', 'status' ],
-        [ $loginid,  $params->{limitation} ]
-    );
+    my $limitation = $self->safe_insert( 'limitation',
+        +{ loginid => $loginid, status => $params->{limitation}, } );
     return { sid => $login->{sid} };
 }
 
@@ -49,52 +49,51 @@ sub _refresh {
     my $options = shift @args;
     my $params  = $options->{params};
     my $sid     = $params->{sid};
-    $params->{loggedin} = 1;
-    my $row = $self->single( 'login', [ 'sid', 'loggedin' ], $params );
-    return $self->error->commit("not exist sid: $sid") if !$row;
-    my $update = $self->_update_login($row);
+    my $simple =
+      $self->valid_single_to( 'login', { sid => $sid, loggedin => 1, } );
+    return $self->error->commit("not exist sid: $sid")
+      if !$simple->exist_params;
+    my $expiry_ts = $self->ts_10_days_later;
+    my $loginid   = $simple->single_result->{params}->{loginid};
+    my $new_sid   = $self->session_id($loginid);
+    my $update    = $simple->update(
+        +{ loggedin => 1, sid => $new_sid, expiry_ts => $expiry_ts, } );
     return { sid => $update->{sid} };
-}
-
-sub _exists_history {
-    my ( $self, @args ) = @_;
-    my $loginid = shift @args;
-    return $self->single( 'login', ['loginid'], { loginid => $loginid } );
-}
-
-sub _update_login {
-    my ( $self, @args ) = @_;
-    my $row        = shift @args;
-    my $loginid    = $row->{loginid};
-    my $sid        = $self->session_id($loginid);
-    my $update_row = { table => 'login', row => $row };
-    my $set_args   = [ [ 'loggedin', 'sid' ], { loggedin => 1, sid => $sid } ];
-    my $update     = $self->db_update( $update_row, $set_args );
-    return $update;
 }
 
 sub _start {
     my ( $self, @args ) = @_;
-    my $options = shift @args;
-    my $params  = $options->{params};
-    my $loginid = $params->{loginid};
-    my $row     = $self->single( 'user', [ 'loginid', 'password' ], $params );
+    my $options  = shift @args;
+    my $params   = $options->{params};
+    my $loginid  = $params->{loginid};
+    my $q_params = { loginid => $loginid, password => $params->{password}, };
+    my $row      = $self->valid_single( 'user', $q_params );
     return $self->error->commit("not exist user: $loginid") if !$row;
 
     # 過去のログイン履歴
-    if ( my $row = $self->_exists_history($loginid) ) {
+    my $sid       = $self->session_id($loginid);
+    my $expiry_ts = $self->ts_10_days_later;
+    my $simple    = $self->valid_single_to( 'login', { loginid => $loginid } );
+    if ( $simple->exist_params ) {
+        my $params = $simple->single_result->{params};
         return $self->error->commit("You are logged in: $loginid")
-          if $row->{loggedin};
+          if $params->{loggedin};
 
         # 履歴がある場合はアップデートでおこなう
-        my $update = $self->_update_login($row);
+        my $set_params =
+          +{ loggedin => 1, sid => $sid, expiry_ts => $expiry_ts, };
+        my $update = $simple->update($set_params);
         return { sid => $update->{sid} };
     }
-    my $expiry_ts = $self->ts_10_days_later;
-    my $sid       = $self->session_id($loginid);
-    my $cols      = [ 'sid', 'loginid', 'loggedin', 'expiry_ts', ];
-    my $data      = [ $sid, $loginid, 1, $expiry_ts, ];
-    my $create    = $self->db_insert( 'login', $cols, $data );
+    my $create = $self->safe_insert(
+        'login',
+        +{
+            sid       => $sid,
+            loginid   => $loginid,
+            loggedin  => 1,
+            expiry_ts => $expiry_ts,
+        }
+    );
     return { sid => $create->{sid} };
 }
 
@@ -102,8 +101,8 @@ sub _status {
     my ( $self, @args ) = @_;
     my $options  = shift @args;
     my $params   = $options->{params};
-    my $q_params = { %{$params}, loggedin => "1", };
-    my $row      = $self->single( 'login', [ 'sid', 'loggedin' ], $q_params );
+    my $q_params = { sid => $params->{sid}, loggedin => "1", };
+    my $row      = $self->valid_single( 'login', $q_params );
     return { status => 400 } if !$row;
     return { status => 200, sid => $row->{sid} };
 }
@@ -113,11 +112,8 @@ sub _end {
     my $options = shift @args;
     my $params  = $options->{params};
     my $sid     = $params->{sid};
-    my $row     = $self->single( 'login', ['sid'], $params );
+    my $row = $self->safe_update( 'login', { sid => $sid }, { loggedin => 0 } );
     return $self->error->commit("not exist sid: $sid") if !$row;
-    my $update_row = { table => 'login', row => $row };
-    my $set_args   = [ ['loggedin'], { loggedin => 0 } ];
-    my $update     = $self->db_update( $update_row, $set_args );
     return {};
 }
 

@@ -140,6 +140,18 @@ sub single {
     return $dbh->selectrow_hashref($sql);
 }
 
+sub valid_single {
+    my ( $self, $table, $params ) = @_;
+    my $q_params = +{ %{$params}, deleted => 0, };
+    return $self->db->single( $table, $q_params );
+}
+
+sub valid_single_to {
+    my ( $self, $table, $params ) = @_;
+    my $q_params = +{ %{$params}, deleted => 0, };
+    return $self->db->single_to( $table, $q_params );
+}
+
 # $self->rows($table, \@cols, \%params);
 sub rows {
     my ( $self, $table, $cols, $params ) = @_;
@@ -176,6 +188,14 @@ sub db_insert {
     return $create;
 }
 
+sub safe_insert {
+    my ( $self, $table, $params ) = @_;
+    my $dt = $self->time_stamp;
+    my $insert_params =
+      +{ %{$params}, deleted => 0, created_ts => $dt, modified_ts => $dt };
+    return $self->db->insert( $table, $insert_params );
+}
+
 sub db_update {
     my ( $self, @args ) = @_;
     my ( $update_row, $set_args, $where_args ) = @args;
@@ -192,6 +212,15 @@ sub db_update {
     $sth->execute() or die $dbh->errstr;
     my $update = $self->single( $table, ['id'], { id => $update_id } );
     return $update;
+}
+
+# $self->safe_update($table, \%search_params, \%update_params);
+sub safe_update {
+    my ( $self, $table, $search_params, $update_params ) = @_;
+    my $dt       = $self->time_stamp;
+    my $q_params = +{ %{$search_params}, deleted     => 0, };
+    my $u_params = +{ %{$update_params}, modified_ts => $dt, };
+    return $self->db->single_to( $table, $q_params )->update($u_params);
 }
 
 sub set_clause {
