@@ -330,9 +330,9 @@ local server example
 python3 -m http.server 8000 --cgi
 
 local client example
-curl 'http://localhost:8000/cgi-bin/index.cgi'
+curl 'http://localhost:8000/cgi-bin/sample.cgi'
 
-curl 'http://localhost:8000/cgi-bin/beauth.cgi' \
+curl 'http://localhost:8000/cgi-bin/index.cgi' \
 --verbose \
 --header 'Content-Type: application/json' \
 --header 'accept: application/json' \
