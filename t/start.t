@@ -335,17 +335,4 @@ curl 'http://localhost:8000/cgi-bin/beauth.cgi' \
 --header 'accept: application/json' \
 --data-binary '{}'
 
-data-binary example
-
-search
-{"apikey":"becom","path":"search","method":"like","params":{}}
-
-search params example
-{"code":"812","town":"吉","pref":"福岡","city":"福岡"}
-
-like search example
-curl 'http://localhost:8000/cgi-bin/zipcode.cgi' \
---verbose \
---header 'Content-Type: application/json' \
---header 'accept: application/json' \
---data-binary '{"apikey":"becom","path":"search","method":"like","params":{"code":"812","town":"吉","pref":"福岡","city":"福岡"}}'
+See documentation, location here `doc/`
