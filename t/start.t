@@ -320,3 +320,19 @@ subtest 'Login' => sub {
 done_testing;
 
 __END__
+
+Beauth::CGI については手動による動作確認にしておく
+
+local server example
+python3 -m http.server 8000 --cgi
+
+local client example
+curl 'http://localhost:8000/cgi-bin/index.cgi'
+
+curl 'http://localhost:8000/cgi-bin/beauth.cgi' \
+--verbose \
+--header 'Content-Type: application/json' \
+--header 'accept: application/json' \
+--data-binary '{}'
+
+See documentation, location here `doc/`

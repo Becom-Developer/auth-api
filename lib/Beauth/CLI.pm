@@ -37,6 +37,10 @@ sub run {
         $self->render->all_items_json( $self->login->run($opt) );
         return;
     }
+    if ( $opt->{resource} eq 'webapi' ) {
+        $self->render->all_items_json( $self->webapi->run($opt) );
+        return;
+    }
     return $self->error->output(
         "Resources and methods are not specified correctly");
 }

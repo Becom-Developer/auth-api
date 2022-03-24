@@ -4,6 +4,8 @@ use utf8;
 use Test::More;
 use FindBin;
 use lib ( "$FindBin::RealBin/../lib", "$FindBin::RealBin/../local/lib/perl5" );
+use Test::Trap qw/:die :output(systemsafe)/;
+use JSON::PP;
 use Beauth;
 use File::Spec;
 use File::Temp qw/ tempfile tempdir /;
@@ -51,6 +53,27 @@ subtest 'Webapi' => sub {
         my $list      = $obj->run($list_args);
         is( $list->{sid},                 $sid,                 'list' );
         is( $list->{list}->[0]->{apikey}, $try_issue->{apikey}, 'list' );
+    };
+    subtest 'script webapi' => sub {
+        my $script =
+          File::Spec->catfile( $FindBin::RealBin, '..', 'script', 'beauth' );
+        my $params = { sid => $sid, target => "mhj", };
+        my $bytes  = encode_json($params);
+        trap { system "$script webapi issue --params='$bytes'" };
+        my $chars = decode_json( $trap->stdout );
+        ok( $chars->{sid},    "ok issue" );
+        ok( $chars->{apikey}, "ok issue" );
+        my $list_params = +{ sid => $sid };
+        my $bytes_list  = encode_json($list_params);
+        trap { system "$script webapi list --params='$bytes_list'" };
+        my $chars_list = decode_json( $trap->stdout );
+        ok( $chars_list->{sid},  "ok list" );
+        ok( $chars_list->{list}, "ok list" );
+        my $delete_params = +{ sid => $sid, apikey => $chars->{apikey} };
+        my $delete_list   = encode_json($delete_params);
+        trap { system "$script webapi delete --params='$delete_list'" };
+        my $chars_delete = decode_json( $trap->stdout );
+        ok( $chars_delete->{sid}, "ok delete" );
     };
 };
 
