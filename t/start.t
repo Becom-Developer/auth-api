@@ -36,8 +36,8 @@ subtest 'File' => sub {
 
 subtest 'Class and Method' => sub {
     my @methods = (
-        'new',           'time_stamp',     'is_test_mode', 'dump',
-        'home',          'homedb',         'homebackup',   'db_file_path',
+        'new',           'time_stamp', 'is_test_mode', 'dump',
+        'home',          'homedb',     'homebackup',   'db_file_path',
         'sql_file_path', 'dump_file_path',
     );
     can_ok( new_ok('Beauth'),         (@methods) );
@@ -77,7 +77,10 @@ subtest 'Framework Error' => sub {
         my $hash  = $obj->commit($chars);
         my $bytes = encode_json($hash);
         trap { $obj->output($chars); };
-        like( $trap->stdout, qr/$bytes/, 'error output' );
+        my $commit_chars = decode( 'utf-8', $bytes );
+        my $stdout_chars = decode( 'utf-8', $trap->stdout );
+        chomp($stdout_chars);
+        is( $commit_chars, $stdout_chars, 'error output' );
     };
 };
 
