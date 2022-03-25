@@ -28,6 +28,14 @@ chmod +x cpanm
 ./cpanm -l ./local --installdeps .
 ```
 
+公開環境へ公開
+
+```sh
+ssh becom2022@becom2022.sakura.ne.jp
+cd ~/www/auth-api
+git pull
+```
+
 ## Usage
 
 ### CLI
