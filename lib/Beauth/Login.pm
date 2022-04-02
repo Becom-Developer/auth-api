@@ -76,8 +76,7 @@ sub _start {
     my $expiry_ts = $self->ts_10_days_later;
     my $login     = $self->valid_single( 'login', { loginid => $loginid } );
     if ($login) {
-        return $self->error->commit("You are logged in: $loginid")
-          if $login->{loggedin};
+        return { sid => $login->{sid} } if $login->{loggedin};
 
         # 履歴がある場合はアップデートでおこなう
         my $update = $self->safe_update(
@@ -114,9 +113,23 @@ sub _end {
     my $options = shift @args;
     my $params  = $options->{params};
     my $sid     = $params->{sid};
-    my $row = $self->safe_update( 'login', { sid => $sid }, { loggedin => 0 } );
-    return $self->error->commit("not exist sid: $sid") if !$row;
-    return {};
+    if ($sid) {
+        my $row =
+          $self->safe_update( 'login', { sid => $sid }, { loggedin => 0 } );
+        return $self->error->commit("not exist sid: $sid") if !$row;
+        return { status => 200 };
+    }
+    my $loginid = $params->{loginid};
+    if ($loginid) {
+        my $row = $self->safe_update(
+            'login',
+            { loginid  => $loginid },
+            { loggedin => 0 }
+        );
+        return $self->error->commit("not exist loginid: $loginid") if !$row;
+        return { status => 200 };
+    }
+    return { status => 400 };
 }
 
 1;

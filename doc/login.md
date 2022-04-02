@@ -117,16 +117,24 @@ beauth login start --params='{}'
 
 ログアウトする
 
+判定順位 cookie_sid -> params_sid -> params_loginid
+
 Request parameters
 
 ```json
 { "sid": "aW5mb0BiZWNvbS5jby5qcDoyMDIyLTAzLTA3IDE0OjI1OjA0" }
 ```
 
+or
+
+```json
+{ "loginid": "info@becom.co.jp" }
+```
+
 Response parameters
 
 ```json
-{}
+{ "status": 200 }
 ```
 
 HTTP
