@@ -279,10 +279,10 @@ subtest 'Login' => sub {
         like( $logout_status, qr/400/, 'success logout' );
     };
     subtest 'Duplicate login' => sub {
-        my $args    = { method => "start", params => $sample, };
-        my $sid     = $obj->run($args)->{sid};
-        my $message = $obj->run($args)->{error}->{message};
-        ok( $message, "error login" );
+        my $args = { method => "start", params => $sample, };
+        my $sid  = $obj->run($args)->{sid};
+        my $sid2 = $obj->run($args)->{sid};
+        is( $sid, $sid2, "login" );
         $obj->run( { method => "end", params => { sid => $sid } } );
     };
     subtest 'Have a login history' => sub {

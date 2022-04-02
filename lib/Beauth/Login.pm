@@ -76,8 +76,7 @@ sub _start {
     my $expiry_ts = $self->ts_10_days_later;
     my $login     = $self->valid_single( 'login', { loginid => $loginid } );
     if ($login) {
-        return $self->error->commit("You are logged in: $loginid")
-          if $login->{loggedin};
+        return { sid => $login->{sid} } if $login->{loggedin};
 
         # 履歴がある場合はアップデートでおこなう
         my $update = $self->safe_update(
