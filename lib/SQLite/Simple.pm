@@ -166,6 +166,9 @@ sub single {
     my ( $table, $params ) = @args;
     my $sql_q = [];
     while ( my ( $key, $val ) = each %{$params} ) {
+        if ( !defined $val ) {
+            $val = '';
+        }
         push @{$sql_q}, qq{$key = "$val"};
     }
     my $sql_clause = join " AND ", @{$sql_q};

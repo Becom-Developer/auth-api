@@ -305,6 +305,15 @@ subtest 'Login' => sub {
         isnt( $sid1, $sid2, "Not duplicate" );
         $obj->run( { method => "end", params => { sid => $sid2 } } );
     };
+    subtest 'loginid logout' => sub {
+        my $start_args = { method => "start", params => $sample, };
+        my $sid        = $obj->run($start_args)->{sid};
+        ok( $sid, "ok login" );
+        my $end_args =
+          { method => "end", params => { loginid => $sample->{loginid} } };
+        my $status = $obj->run($end_args)->{status};
+        is( $status, '200', "logout" );
+    };
     subtest 'script login' => sub {
         my $script =
           File::Spec->catfile( $FindBin::RealBin, '..', 'script', 'beauth' );

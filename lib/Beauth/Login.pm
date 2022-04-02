@@ -113,9 +113,23 @@ sub _end {
     my $options = shift @args;
     my $params  = $options->{params};
     my $sid     = $params->{sid};
-    my $row = $self->safe_update( 'login', { sid => $sid }, { loggedin => 0 } );
-    return $self->error->commit("not exist sid: $sid") if !$row;
-    return {};
+    if ($sid) {
+        my $row =
+          $self->safe_update( 'login', { sid => $sid }, { loggedin => 0 } );
+        return $self->error->commit("not exist sid: $sid") if !$row;
+        return { status => 200 };
+    }
+    my $loginid = $params->{loginid};
+    if ($loginid) {
+        my $row = $self->safe_update(
+            'login',
+            { loginid  => $loginid },
+            { loggedin => 0 }
+        );
+        return $self->error->commit("not exist loginid: $loginid") if !$row;
+        return { status => 200 };
+    }
+    return { status => 400 };
 }
 
 1;

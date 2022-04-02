@@ -17,10 +17,10 @@ sub run {
 
     # cookieでapikeyを取得した場合はこちらで判定
     # apikeyのdbができてから実装
-    # my $cookie_apikey = $query->cookie('apikey');
-
-    my $origin  = $ENV{HTTP_ORIGIN};
-    my @headers = (
+    # cookie に sid があるときはこちらを優先
+    my $cookie_sid = $q->cookie('sid');
+    my $origin     = $ENV{HTTP_ORIGIN};
+    my @headers    = (
         -type    => 'application/json',
         -charset => 'utf-8',
     );
@@ -39,6 +39,9 @@ sub run {
     if ($postdata) {
         $opt = decode_json($postdata);
     }
+    if ($cookie_sid) {
+        $opt->{params}->{sid} = $cookie_sid;
+    }
 
     # Validate
     return $self->error->output(
@@ -49,7 +52,7 @@ sub run {
 
     # Routing
     if ( $opt->{resource} eq 'login' ) {
-        $self->render->all_items_json( $self->login->run( $opt ) );
+        $self->render->all_items_json( $self->login->run($opt) );
         return;
     }
     return $self->error->output("The resource is specified incorrectly");
