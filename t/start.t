@@ -180,12 +180,36 @@ subtest 'User' => sub {
     )->{sid};
     my $sample =
       +{ loginid => 'info@becom.co.jp', password => "info", sid => $sid };
+    my $signup_params = {
+        method => "signup",
+        params => +{
+            loginid    => 'general@becom.co.jp',
+            password   => "general",
+            limitation => "200",
+        },
+    };
+    my $general_sid = new_ok('Beauth::Login')->run($signup_params)->{sid};
+    my $general_id  = $obj->run(
+        {
+            method => "get",
+            params =>
+              { loginid => $signup_params->{params}->{loginid}, sid => $sid }
+        }
+    )->{id};
     subtest 'insert' => sub {
         my $q    = +{ method => "insert", params => $sample, };
         my $hash = $obj->run($q);
         ok( $hash->{loginid} eq $q->{params}->{loginid},   'insert' );
         ok( $hash->{password} eq $q->{params}->{password}, 'insert' );
         ok( $obj->is_general( { loginid => $hash->{loginid} } ) );
+        my $insert_params = +{
+            loginid  => 'general2@becom.co.jp',
+            password => "general2",
+            sid      => $general_sid
+        };
+        my $insert_args = +{ method => "insert", params => $insert_params, };
+        my $insert_msg  = $obj->run($insert_args)->{error}->{message};
+        ok( $insert_msg, "error get" );
     };
     subtest 'get' => sub {
         my $params = { loginid => $sample->{loginid}, sid => $sample->{sid} };
@@ -193,6 +217,13 @@ subtest 'User' => sub {
         my $hash   = $obj->run($args);
         ok( $hash->{loginid} eq $sample->{loginid},   'get' );
         ok( $hash->{password} eq $sample->{password}, 'get' );
+        my $get_params = {
+            loginid => $signup_params->{params}->{loginid},
+            sid     => $general_sid
+        };
+        my $get_args = +{ method => "get", params => $get_params };
+        my $get_msg  = $obj->run($get_args)->{error}->{message};
+        ok( $get_msg, "error get" );
     };
     subtest 'list' => sub {
         my $args = +{ method => "list", params => { sid => $sid } };
@@ -200,6 +231,10 @@ subtest 'User' => sub {
         my $data = [ grep { $_->{loginid} eq $sample->{loginid} } @{$rows} ];
         ok( $data->[0]->{loginid} eq $sample->{loginid},   'list' );
         ok( $data->[0]->{password} eq $sample->{password}, 'list' );
+        my $list_args =
+          +{ method => "list", params => { sid => $general_sid } };
+        my $list_msg = $obj->run($list_args)->{error}->{message};
+        ok( $list_msg, "error list" );
     };
     subtest 'update' => sub {
         my $get_params  = { loginid => $sample->{loginid}, sid => $sid };
@@ -228,6 +263,16 @@ subtest 'User' => sub {
         };
         my $loginid = $obj->run($re_update_args)->{loginid};
         ok( $loginid eq $sample->{loginid}, 'update' );
+        my $general_update_args = {
+            method => "update",
+            params => {
+                sid      => $general_sid,
+                id       => $general_id,
+                password => 'info2',
+            }
+        };
+        my $update_msg = $obj->run($general_update_args)->{error}->{message};
+        ok( $update_msg, "error update" );
     };
     subtest 'delete' => sub {
         my $loginid    = $sample->{loginid};
@@ -239,6 +284,12 @@ subtest 'User' => sub {
         ok( !%{$hash}, 'delete' );
         my $error = $obj->run($get_args)->{error};
         ok( $error->{message}, 'delete' );
+        my $delete_args = {
+            method => "delete",
+            params => { id => $general_id, sid => $general_sid }
+        };
+        my $delete_msg = $obj->run($delete_args)->{error}->{message};
+        ok( $delete_msg, "error delete" );
     };
     subtest 'script insert' => sub {
         my $script =

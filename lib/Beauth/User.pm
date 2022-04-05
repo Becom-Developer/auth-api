@@ -37,7 +37,9 @@ sub _list {
     my $params  = $options->{params};
 
     # root 権限のみ有効
-    return if $self->_valid($params);
+    if ( my $error = $self->_valid($params) ) {
+        return $error;
+    }
     my $table = 'user';
     my $rows  = $self->valid_search( $table, {} );
     return $self->error->commit("not exist $table: ") if !$rows;
@@ -50,7 +52,9 @@ sub _delete {
     my $params  = $options->{params};
 
     # root 権限のみ有効
-    return if $self->_valid($params);
+    if ( my $error = $self->_valid($params) ) {
+        return $error;
+    }
     my $id     = $params->{id};
     my $table  = 'user';
     my $update = $self->safe_update( $table, { id => $id }, { deleted => 1 } );
@@ -64,7 +68,9 @@ sub _update {
     my $params  = $options->{params};
 
     # root 権限のみ有効
-    return if $self->_valid($params);
+    if ( my $error = $self->_valid($params) ) {
+        return $error;
+    }
     my $id       = $params->{id};
     my $password = $params->{password};
     my $table    = 'user';
@@ -80,7 +86,9 @@ sub _insert {
     my $params  = $options->{params};
 
     # root 権限のみ有効
-    return if $self->_valid($params);
+    if ( my $error = $self->_valid($params) ) {
+        return $error;
+    }
     my $table    = 'user';
     my $loginid  = $params->{loginid};
     my $password = $params->{password};
@@ -99,7 +107,9 @@ sub _get {
     my $params  = $options->{params};
 
     # root 権限のみ有効
-    return if $self->_valid($params);
+    if ( my $error = $self->_valid($params) ) {
+        return $error;
+    }
     my $table   = 'user';
     my $loginid = $params->{loginid};
     my $row     = $self->valid_single( $table, { loginid => $loginid } );
