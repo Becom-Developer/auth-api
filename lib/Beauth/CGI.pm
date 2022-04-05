@@ -55,6 +55,14 @@ sub run {
         $self->render->all_items_json( $self->login->run($opt) );
         return;
     }
+    if ( $opt->{resource} eq 'user' ) {
+        $self->render->all_items_json( $self->user->run($opt) );
+        return;
+    }
+    if ( $opt->{resource} eq 'webapi' ) {
+        $self->render->all_items_json( $self->webapi->run($opt) );
+        return;
+    }
     return $self->error->output("The resource is specified incorrectly");
 }
 
