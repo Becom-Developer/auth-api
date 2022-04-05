@@ -1,0 +1,41 @@
+#!/usr/bin/env perl
+use FindBin;
+use lib ( "$FindBin::RealBin/../lib", "$FindBin::RealBin/../local/lib/perl5" );
+use Mojolicious::Lite -signatures;
+use Beauth;
+use Data::Dumper;
+
+any '/' => sub ($c) {
+    my $apikey = 'becom';
+    my $beauth = Beauth->new;
+    my $opt = $c->req->params->to_hash;
+
+    # Validate
+    if (!$opt->{resource} || !$opt->{method} || !$opt->{apikey}) {
+        my $msg = $beauth->error->commit("Unknown option specification: resource, method, apikey");
+        $c->render(json => $msg);
+        return;
+    }
+
+    # Routing
+    if ( $opt->{resource} eq 'login' ) {
+        my $hash = $beauth->login->run($opt);
+        $c->render(json => $hash);
+        return;
+    }
+    if ( $opt->{resource} eq 'user' ) {
+        my $hash = $beauth->user->run($opt);
+        $c->render(json => $hash);
+        return;
+    }
+    if ( $opt->{resource} eq 'webapi' ) {
+        my $hash = $beauth->webapi->run($opt);
+        $c->render(json => $hash);
+        return;
+    }
+    my $msg = $beauth->error->commit("The resource is specified incorrectly");
+    $c->render(json => $msg);
+    return;
+};
+
+app->start;
