@@ -36,6 +36,12 @@ cd ~/www/auth-api
 git pull
 ```
 
+ローカル環境での実行
+
+```sh
+perl -I ./local/lib/perl5 ./local/bin/morbo ./script/app
+```
+
 ## Usage
 
 ### CLI

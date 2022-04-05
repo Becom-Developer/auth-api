@@ -1,0 +1,56 @@
+#!/usr/bin/env perl
+use FindBin;
+use lib ( "$FindBin::RealBin/../lib", "$FindBin::RealBin/../local/lib/perl5" );
+use Mojolicious::Lite -signatures;
+use Beauth;
+any '/' => sub ($c) {
+    my $apikey = 'becom';
+    my $beauth = Beauth->new;
+    my $origin = $c->req->headers->origin;
+    my $opt    = $c->req->json;
+    $c->res->headers->header( 'Access-Control-Allow-Origin' => $origin );
+    $c->res->headers->header(
+        'Access-Control-Allow-Headers' => 'content-type,X-Requested-With' );
+    $c->res->headers->header(
+        'Access-Control-Allow-Methods' => 'GET,POST,OPTIONS' );
+    $c->res->headers->header( 'Access-Control-Allow-Credentials' => 'true' );
+
+    # $c->app->log->debug( $c->app->dumper( $c->res->headers ) );
+    # Validate
+    if ( !$opt->{resource} || !$opt->{method} || !$opt->{apikey} ) {
+        my $msg = $beauth->error->commit(
+            "Unknown option specification: resource, method, apikey");
+        $c->render( json => $msg );
+        return;
+    }
+    if ( $apikey ne $opt->{apikey} ) {
+        my $msg = $beauth->error->commit("apikey is incorrect: $opt->{apikey}");
+        $c->render( json => $msg );
+        return;
+    }
+
+    # Routing
+    if ( $opt->{resource} eq 'login' ) {
+        my $hash = $beauth->login->run($opt);
+        $c->app->log->debug( $c->app->dumper($hash) );
+        $c->render( json => $hash );
+        return;
+    }
+    if ( $opt->{resource} eq 'user' ) {
+        my $hash = $beauth->user->run($opt);
+        $c->app->log->debug( $c->app->dumper($hash) );
+        $c->render( json => $hash );
+        return;
+    }
+    if ( $opt->{resource} eq 'webapi' ) {
+        my $hash = $beauth->webapi->run($opt);
+        $c->app->log->debug( $c->app->dumper($hash) );
+        $c->render( json => $hash );
+        return;
+    }
+    my $msg = $beauth->error->commit("The resource is specified incorrectly");
+    $c->render( json => $msg );
+    return;
+};
+
+app->start;
