@@ -15,13 +15,15 @@ use Beauth::CLI;
 use File::Temp qw/ tempfile tempdir /;
 my $temp     = File::Temp->newdir( DIR => $FindBin::RealBin, CLEANUP => 1, );
 my $test_dir = $temp->dirname;
-$ENV{"BEAUTH_MODE"} = 'test';
-$ENV{"BEAUTH_DUMP"} = File::Spec->catfile( $test_dir, 'beauth.dump' );
-$ENV{"BEAUTH_DB"}   = File::Spec->catfile( $test_dir, 'beauth.db' );
+$ENV{"BEAUTH_MODE"}    = 'test';
+$ENV{"BEAUTH_TESTDIR"} = $test_dir;
+$ENV{"BEAUTH_DUMP"}    = File::Spec->catfile( $test_dir, 'beauth.dump' );
+$ENV{"BEAUTH_DB"}      = File::Spec->catfile( $test_dir, 'beauth.db' );
 
 # 環境変数
 # BEAUTH_MODE 実行モード
 # BEAUTH_HOME プロジェクトのパス
+# BEAUTH_TESTDIR テスト後に破棄するディレクトリ
 # BEAUTH_DB データベースファイルのパス
 # BEAUTH_SQL SQLファイルのパス
 # BEAUTH_DUMP SQL dumpファイルのパス
@@ -91,6 +93,10 @@ subtest 'Framework Build' => sub {
     subtest 'init' => sub {
         my $hash = $obj->start( { method => 'init' } );
         like( $hash->{message}, qr/success/, 'success init' );
+        my $file_name = 'beauth-stg.db';
+        my $stg =
+          $obj->start( { method => 'init', params => { name => $file_name } } );
+        like( $stg->{message}, qr/$file_name/, 'success init' );
     };
     subtest 'insert' => sub {
         my $csv  = File::Spec->catfile( $FindBin::RealBin, 'user-test.csv' );
