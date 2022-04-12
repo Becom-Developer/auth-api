@@ -2,44 +2,58 @@
 
 認証をする共通のアプリ
 
-## SETUP
+## Setup
 
-ignore
+事前に`plenv`を使えるようにしておき指定バージョンのPerlを使えるように
 
-```zsh
-echo 'local' >> .gitignore
-echo 'db' >> .gitignore
-```
-
-Perl
+git clone にてソースコードを配置後プロジェクト配下にてモジュールをインストール
 
 ```zsh
-echo '5.14.4' > .perl-version
-echo "requires 'DBD::SQLite', '==1.54';" >> cpanfile
-echo "requires 'Test::Trap';" >> cpanfile
-echo "requires 'Text::CSV', '2.01';" >> cpanfile
-```
-
-Module
-
-```zsh
-curl -L https://cpanmin.us/ -o cpanm
-chmod +x cpanm
 ./cpanm -l ./local --installdeps .
 ```
+
+## Work
+
+ローカル開発時の起動方法など
+
+app サーバー起動の場合
+
+```zsh
+perl -I ./local/lib/perl5 ./local/bin/morbo ./script/app
+```
+
+リクエスト
+
+```zsh
+curl 'http://localhost:3000/'
+```
+
+cgi ファイルを起動の場合
+
+```zsh
+python3 -m http.server 8000 --cgi
+```
+
+リクエスト
+
+```zsh
+curl 'http://localhost:3000/cgi-bin/index.cgi'
+```
+
+コマンドラインによる起動
+
+```zsh
+./script/beauth
+```
+
+詳細は[doc/](doc/)を参照
 
 公開環境へ公開
 
 ```sh
 ssh becom2022@becom2022.sakura.ne.jp
 cd ~/www/auth-api
-git pull
-```
-
-ローカル環境での実行
-
-```sh
-perl -I ./local/lib/perl5 ./local/bin/morbo ./script/app
+git fetch && git checkout main && git pull
 ```
 
 ## Usage
@@ -87,51 +101,92 @@ login     Login system
 webapi    Manage apikey
 ```
 
+## URL
+
+`auth-api`に紐づけられる各種URLの全体像
+
+stg環境については各アプリ利用状況に応じて用意してゆく予定
+
+### prod
+
+- zsearch
+  - zsearch-api `https://zsearch-api.becom.co.jp/`
+  - zsearch-web `https://zsearch-web.becom.co.jp/`
+- mhj
+  - mhj-api `https://mhj-api.becom.co.jp/`
+  - mhj-web `https://mhj-web.becom.co.jp/`
+- img-stocker
+  - static `https://img.becom.co.jp/`
+  - img-api `https://img-api.becom.co.jp/`
+  - img-web `https://img-web.becom.co.jp/`
+- drill
+  - drill-api `https://drill-api.becom.co.jp/`
+  - drill-web `https://drill-web.becom.co.jp/`
+
+### stg
+
+- beauth
+  - auth-api `https://auth-stg-api.becom.co.jp/`
+  - auth-web `https://auth-stg-web.becom.co.jp/`
+- zsearch
+  - zsearch-api `https://zsearch-stg-api.becom.co.jp/`
+  - zsearch-web `https://zsearch-stg-web.becom.co.jp/`
+- mhj
+  - mhj-api `https://mhj-stg-api.becom.co.jp/`
+  - mhj-web `https://mhj-stg-web.becom.co.jp/`
+- img-stocker
+  - static `https://img-stg.becom.co.jp/`
+  - img-api `https://img-stg-api.becom.co.jp/`
+  - img-web `https://img-stg-web.becom.co.jp/`
+- drill
+  - drill-api `https://drill-stg-api.becom.co.jp/`
+  - drill-web `https://drill-stg-web.becom.co.jp/`
+
+### local
+
+- beauth
+  - auth-api `http://localhost:3000/`
+  - auth-web `http://localhost:4000/`
+- zsearch
+  - zsearch-api `http://localhost:3010/`
+  - zsearch-web `http://localhost:4010/`
+- mhj
+  - mhj-api `http://localhost:3020/`
+  - mhj-web `http://localhost:4020/`
+- img-stocker
+  - static `http://localhost:3030/static/`
+  - img-api `http://localhost:3030/`
+  - img-web `http://localhost:4030/`
+- drill
+  - drill-api `http://localhost:3040/`
+  - drill-web `http://localhost:4040/`
+
 ## Memo
 
-```text
-認証をする共通のアプリ
-auth-api.becom.co.jp -> www/auth-api/cgi-bin/
-コマンド
-beauth --path=user --method=get --params='{}'
-beauth --path=user --method=list --params='{}'
-beauth --path=user --method=insert --params='{}'
-beauth --path=user --method=update --params='{}'
-beauth --path=user --method=delete --params='{}'
+### Environment
 
-beauth --path=login --params='{}'
-beauth --path=logout --params='{}'
+初動時の環境構築に関するメモ
 
-beauth --path=session --method=get --params='{}'
-beauth --path=session --method=list --params='{}'
-beauth --path=session --method=insert --params='{}'
-beauth --path=session --method=update --params='{}'
-beauth --path=session --method=delete --params='{}'
+ignore
 
-beauth --path=apikey --method=get --params='{}'
-beauth --path=apikey --method=list --params='{}'
-beauth --path=apikey --method=insert --params='{}'
-beauth --path=apikey --method=update --params='{}'
-beauth --path=apikey --method=delete --params='{}'
+```zsh
+echo 'local' >> .gitignore
+echo 'db' >> .gitignore
 ```
 
-ログインの流れのメモ
+Perl
 
-```text
-get / zsearch-web.becom.co.jp/login
-  入力フォーム
-  html の入力フォームのpostでおくる
-  id,pass 送信logincheck
-  post auth-api.becom.co.jp/index.cgi
-    {path:login,method:input,params:{id:becom,pass:becom}}
-    res {msg:ok,id:'',sid:becom..}
-    html フォームをクリック実行
-    送信時postのparamsにsidをのせておく
-    post auth-api.becom.co.jp/index.cgi
+```zsh
+echo '5.14.4' > .perl-version
+echo "requires 'DBD::SQLite', '==1.54';" >> cpanfile
+echo "requires 'Test::Trap';" >> cpanfile
+echo "requires 'Text::CSV', '2.01';" >> cpanfile
+```
 
-    post zsearch-web.becom.co.jp/loggedin.cgi
-      cookie情報の埋め込み
-        sid: becomsid ...
-      body: ログイン後の画面へのリンク
-    get zsearch-web.becom.co.jp/admin
+Module
+
+```zsh
+curl -L https://cpanmin.us/ -o cpanm
+chmod +x cpanm
+./cpanm -l ./local --installdeps .
 ```
