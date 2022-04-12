@@ -31,7 +31,7 @@ curl 'http://localhost:3000/'
 cgi ファイルを起動の場合
 
 ```zsh
-python3 -m http.server 8000 --cgi
+python3 -m http.server 3000 --cgi
 ```
 
 リクエスト
