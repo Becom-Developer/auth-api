@@ -1,4 +1,5 @@
 package SQLite::Simple;
+use 5.10.1;
 use strict;
 use warnings;
 use utf8;
@@ -8,6 +9,9 @@ use Time::Piece;
 use Text::CSV;
 use File::Path qw(make_path remove_tree);
 use File::Basename;
+
+our @ISA = qw();
+our $VERSION = '0.01';
 
 sub new {
     my $class = shift;
@@ -86,21 +90,23 @@ sub build_insert {
     my $csv    = Text::CSV->new();
 
     # time stamp の指定
-    my $stamp_cols = $params->{time_stamp};
-    my $stamp_int  = [];
-    my $int        = 0;
-    for my $col ( @{$cols} ) {
-        if ( grep { $_ eq $col } @{$stamp_cols} ) {
-            push @{$stamp_int}, $int;
-        }
-        $int += 1;
-    }
-    my $dt = $self->time_stamp;
+    my ( $is_stamp, $stamp_int, $dt ) = $self->_time_stamp($params);
+
+    # 上書きの値
+    my ( $is_rewrite, $rewrite_params ) = $self->_rewrite($params);
     while ( my $row = $csv->getline($fh) ) {
         my $data = $row;
-        if ($stamp_cols) {
+        if ($is_stamp) {
             for my $int ( @{$stamp_int} ) {
                 $data->[$int] = $dt;
+            }
+        }
+        if ($is_rewrite) {
+            for my $rewrite_param ( @{$rewrite_params} ) {
+                for my $key ( keys %{$rewrite_param} ) {
+                    my $val = $rewrite_param->{$key};
+                    $data->[$key] = $params->{rewrite}->{$val};
+                }
             }
         }
         my $sth = $dbh->prepare($sql);
@@ -108,6 +114,50 @@ sub build_insert {
     }
     $fh->close;
     return +{ message => qq{insert success $path} };
+}
+
+sub _time_stamp {
+    my ( $self, @args ) = @_;
+    my $params     = shift @args;
+    my $is_stamp   = 0;
+    my $cols       = $params->{cols};
+    my $stamp_cols = $params->{time_stamp};
+    return ( $is_stamp, undef, undef ) if !$stamp_cols;
+    return ( $is_stamp, undef, undef ) if scalar( @{$stamp_cols} ) eq 0;
+
+    my $stamp_int = [];
+    my $int       = 0;
+    for my $col ( @{$cols} ) {
+        if ( grep { $_ eq $col } @{$stamp_cols} ) {
+            push @{$stamp_int}, $int;
+        }
+        $int += 1;
+    }
+    my $dt = $self->time_stamp;
+    $is_stamp = 1;
+    return ( $is_stamp, $stamp_int, $dt );
+}
+
+sub _rewrite {
+    my ( $self, @args ) = @_;
+    my $params     = shift @args;
+    my $is_rewrite = 0;
+    my $cols       = $params->{cols};
+    my $rewrite    = $params->{rewrite};
+    return ( $is_rewrite, undef, undef ) if !$rewrite;
+    return ( $is_rewrite, undef, undef ) if !%{$rewrite};
+    my @keys           = keys %{$rewrite};
+    my $rewrite_params = [];
+    my $int            = 0;
+
+    for my $col ( @{$cols} ) {
+        if ( grep { $_ eq $col } @keys ) {
+            push @{$rewrite_params}, { $int => $col };
+        }
+        $int += 1;
+    }
+    $is_rewrite = 1;
+    return ( $is_rewrite, $rewrite_params );
 }
 
 sub build_dump {
@@ -177,13 +227,19 @@ sub single {
     return $dbh->selectrow_hashref($sql);
 }
 
-# my $arrey_ref = $self->db->search($table, \%params);
+# my $arrey_ref = $self->db->search($table, \%params, \%opt);
 sub search {
-    my ( $self,  @args )   = @_;
-    my ( $table, $params ) = @args;
+    my ( $self, @args ) = @_;
+    my ( $table, $params, $opt ) = @args;
     my $sql_q = [];
+    my $cond  = $opt->{cond};
     while ( my ( $key, $val ) = each %{$params} ) {
-        push @{$sql_q}, qq{$key = "$val"};
+        if ( $cond && $cond eq 'LIKE%' ) {
+            push @{$sql_q}, qq{$key LIKE "$val%"};
+        }
+        else {
+            push @{$sql_q}, qq{$key = "$val"};
+        }
     }
     my $sql_clause = join " AND ", @{$sql_q};
     my $sql        = qq{SELECT * FROM $table WHERE $sql_clause};
@@ -250,7 +306,50 @@ sub where_clause {
     my $where_clause = join " AND ", @{$where_q};
     return $where_clause;
 }
-
 1;
-
 __END__
+# Below is stub documentation for your module. You'd better edit it!
+
+=head1 NAME
+
+SQLite::Simple - Perl extension for blah blah blah
+
+=head1 SYNOPSIS
+
+  use SQLite::Simple;
+  blah blah blah
+
+=head1 DESCRIPTION
+
+Stub documentation for SQLite::Simple, created by h2xs. It looks like the
+author of the extension was negligent enough to leave the stub
+unedited.
+
+Blah blah blah.
+
+
+=head1 SEE ALSO
+
+Mention other useful documentation such as the documentation of
+related modules or operating system documentation (such as man pages
+in UNIX), or any relevant external documentation such as RFCs or
+standards.
+
+If you have a mailing list set up for your module, mention it here.
+
+If you have a web site set up for your module, mention it here.
+
+=head1 AUTHOR
+
+yk, E<lt>yk@localE<gt>
+
+=head1 COPYRIGHT AND LICENSE
+
+Copyright (C) 2022 by yk
+
+This library is free software; you can redistribute it and/or modify
+it under the same terms as Perl itself, either Perl version 5.34.1 or,
+at your option, any later version of Perl 5 you may have available.
+
+
+=cut
