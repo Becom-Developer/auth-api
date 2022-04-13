@@ -163,6 +163,12 @@ stg環境については各アプリ利用状況に応じて用意してゆく�
 
 ## Memo
 
+sqlite-simple についてはしばらくはダウンロード対応
+
+```zsh
+cp ~/Downloads/SQLite-Simple-main/lib/SQLite/Simple.pm ~/github/auth-api/lib/SQLite
+```
+
 ### Environment
 
 初動時の環境構築に関するメモ
