@@ -89,6 +89,12 @@ webapi    Manage apikey
 
 ## Memo
 
+sqlite-simple についてはしばらくはダウンロード対応
+
+```zsh
+cp ~/Downloads/SQLite-Simple-main/lib/SQLite/Simple.pm ~/github/auth-api/lib/SQLite
+```
+
 ```text
 認証をする共通のアプリ
 auth-api.becom.co.jp -> www/auth-api/cgi-bin/
