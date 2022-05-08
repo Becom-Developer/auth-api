@@ -96,8 +96,8 @@ See here for details: [doc/](doc/)
 
 ```text
 build     Environment
-user      Registered user
 login     Login system
+user      Registered user
 webapi    Manage apikey
 ```
 
@@ -109,6 +109,9 @@ stg環境については各アプリ利用状況に応じて用意してゆく�
 
 ### prod
 
+- beauth
+  - auth-api `https://auth-api.becom.co.jp/`
+  - auth-web `https://auth-web.becom.co.jp/`
 - zsearch
   - zsearch-api `https://zsearch-api.becom.co.jp/`
   - zsearch-web `https://zsearch-web.becom.co.jp/`
