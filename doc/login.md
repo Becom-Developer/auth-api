@@ -175,7 +175,8 @@ Response parameters
 ```json
 {
   "sid": "aW5mb0BiZWNvbS5jby5qcDoyMDIyLTAzLTA3IDE0OjI1OjA0",
-  "status": 200
+  "status": 200,
+  "user": { "loginid": "info@becom.co.jp", "limitation": "100" }
 }
 ```
 
@@ -209,7 +210,10 @@ Request parameters
 Response parameters
 
 ```json
-{ "sid": "aW5mb0BiZWNvbS5jby5qcDoyMDIyLTAzLTA4IDEwOjM3OjU2OjAyNDM" }
+{
+  "sid": "aW5mb0BiZWNvbS5jby5qcDoyMDIyLTAzLTA4IDEwOjM3OjU2OjAyNDM",
+  "user": { "loginid": "info@becom.co.jp", "limitation": "100" }
+}
 ```
 
 HTTP

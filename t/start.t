@@ -166,10 +166,13 @@ subtest 'Login signup' => sub {
     my $user = $hash->{user};
     is( $user->{loginid},    $sample->{loginid},    'success loginid' );
     is( $user->{limitation}, $sample->{limitation}, 'success limitation' );
-    my $status =
-      $obj->run( { method => "status", params => { sid => $hash->{sid} } } )
-      ->{status};
+    my $res =
+      $obj->run( { method => "status", params => { sid => $hash->{sid} } } );
+    my $status = $res->{status};
     like( $status, qr/200/, 'success login status' );
+    my $res_user = $res->{user};
+    is( $res_user->{loginid},    $sample->{loginid},    'success loginid' );
+    is( $res_user->{limitation}, $sample->{limitation}, 'success limitation' );
 };
 
 subtest 'User' => sub {
@@ -365,9 +368,13 @@ subtest 'Login' => sub {
         my $sid1       = $obj->run($start_args)->{sid};
         ok( $sid1, "ok login" );
         my $refrsh_args = { method => "refresh", params => { sid => $sid1 } };
-        my $sid2        = $obj->run($refrsh_args)->{sid};
+        my $refresh     = $obj->run($refrsh_args);
+        my $sid2        = $refresh->{sid};
         ok( $sid2, "ok refresh" );
         isnt( $sid1, $sid2, "Not duplicate" );
+        my $user = $refresh->{user};
+        is( $user->{loginid},    $sample->{loginid}, 'success loginid' );
+        is( $user->{limitation}, $sample_limit->{limitation}, 'success limit' );
         $obj->run( { method => "end", params => { sid => $sid2 } } );
     };
     subtest 'loginid logout' => sub {
