@@ -41,7 +41,10 @@ sub _signup {
     );
     my $limitation = $self->safe_insert( 'limitation',
         +{ loginid => $loginid, status => $params->{limitation} || '200', } );
-    return { sid => $login->{sid} };
+    return {
+        sid  => $login->{sid},
+        user => { loginid => $loginid, limitation => $limitation->{status} }
+    };
 }
 
 sub _refresh {
@@ -75,6 +78,8 @@ sub _start {
     my $sid       = $self->session_id($loginid);
     my $expiry_ts = $self->ts_10_days_later;
     my $login     = $self->valid_single( 'login', { loginid => $loginid } );
+    my $limitation =
+      $self->valid_single( 'limitation', { loginid => $loginid } );
     if ($login) {
         return { sid => $login->{sid} } if $login->{loggedin};
 
@@ -84,7 +89,10 @@ sub _start {
             { loginid  => $loginid },
             { loggedin => 1, sid => $sid, expiry_ts => $expiry_ts, }
         );
-        return { sid => $update->{sid} };
+        return {
+            sid  => $update->{sid},
+            user => { loginid => $loginid, limitation => $limitation->{status} }
+        };
     }
     my $create = $self->safe_insert(
         'login',
@@ -95,7 +103,10 @@ sub _start {
             expiry_ts => $expiry_ts,
         }
     );
-    return { sid => $create->{sid} };
+    return {
+        sid  => $create->{sid},
+        user => { loginid => $loginid, limitation => $limitation->{status} }
+    };
 }
 
 sub _status {
