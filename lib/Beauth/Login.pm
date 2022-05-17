@@ -61,8 +61,14 @@ sub _refresh {
         { sid => $sid, loggedin => 1, },
         { loggedin => 1, sid => $new_sid, expiry_ts => $expiry_ts, }
     );
+    my $loginid = $update->{loginid};
+    my $limitation =
+      $self->valid_single( 'limitation', { loginid => $loginid } );
     return $self->error->commit("not exist sid: $sid") if !$update;
-    return { sid => $update->{sid} };
+    return {
+        sid  => $update->{sid},
+        user => { loginid => $loginid, limitation => $limitation->{status} }
+    };
 }
 
 sub _start {
@@ -116,7 +122,14 @@ sub _status {
     my $q_params = { sid => $params->{sid}, loggedin => "1", };
     my $row      = $self->valid_single( 'login', $q_params );
     return { status => 400 } if !$row;
-    return { status => 200, sid => $row->{sid} };
+    my $loginid = $row->{loginid};
+    my $limitation =
+      $self->valid_single( 'limitation', { loginid => $loginid } );
+    return {
+        status => 200,
+        sid    => $row->{sid},
+        user   => { loginid => $loginid, limitation => $limitation->{status} }
+    };
 }
 
 sub _end {
