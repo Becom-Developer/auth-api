@@ -59,7 +59,10 @@ Request parameters
 Response parameters
 
 ```json
-{ "sid": "aW5mb0BiZWNvbS5jby5qcDoyMDIyLTAzLTA3IDE0OjI1OjA0" }
+{
+  "sid": "aW5mb0BiZWNvbS5jby5qcDoyMDIyLTAzLTA3IDE0OjI1OjA0",
+  "user": { "loginid": "info@becom.co.jp", "limitation": "100" }
+}
 ```
 
 HTTP
@@ -94,7 +97,10 @@ Request parameters
 Response parameters
 
 ```json
-{ "sid": "aW5mb0BiZWNvbS5jby5qcDoyMDIyLTAzLTA3IDE0OjI1OjA0" }
+{
+  "sid": "aW5mb0BiZWNvbS5jby5qcDoyMDIyLTAzLTA3IDE0OjI1OjA0",
+  "user": { "loginid": "info@becom.co.jp", "limitation": "100" }
+}
 ```
 
 HTTP
