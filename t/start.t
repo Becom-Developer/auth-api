@@ -163,6 +163,9 @@ subtest 'Login signup' => sub {
     my $hash = $obj->run( { method => "signup", params => $sample, } );
     my $sid  = decode_base64( $hash->{sid} );
     like( $sid, qr/$sample->{loginid}/, 'success sid' );
+    my $user = $hash->{user};
+    is( $user->{loginid},    $sample->{loginid},    'success loginid' );
+    is( $user->{limitation}, $sample->{limitation}, 'success limitation' );
     my $status =
       $obj->run( { method => "status", params => { sid => $hash->{sid} } } )
       ->{status};
@@ -312,9 +315,10 @@ subtest 'Login' => sub {
     my $obj = new_ok('Beauth::Login');
     my $msg = $obj->run()->{error}->{message};
     ok( $msg, 'error message' );
-    my $sample = +{ loginid => 'info@becom.co.jp', password => "info" };
+    my $sample       = +{ loginid => 'info@becom.co.jp', password => "info" };
+    my $sample_limit = +{ limitation => "100" };
     subtest 'signup to end' => sub {
-        my $signup_params = +{ %{$sample}, limitation => "100", };
+        my $signup_params = +{ %{$sample}, %{$sample_limit} };
         my $args          = { method => "signup", params => $signup_params };
         my $sid           = $obj->run($args)->{sid};
         my $status_args   = { method => "status", params => { sid => $sid } };
@@ -325,9 +329,13 @@ subtest 'Login' => sub {
         like( $logout_status, qr/400/, 'success logout' );
     };
     subtest 'start to end' => sub {
-        my $sid = $obj->run( { method => "start", params => $sample, } )->{sid};
+        my $start      = $obj->run( { method => "start", params => $sample, } );
+        my $sid        = $start->{sid};
         my $decode_sid = decode_base64($sid);
         like( $decode_sid, qr/$sample->{loginid}/, 'success sid' );
+        my $user = $start->{user};
+        is( $user->{loginid},    $sample->{loginid}, 'success loginid' );
+        is( $user->{limitation}, $sample_limit->{limitation}, 'success limit' );
         my $status_args = { method => "status", params => { sid => $sid } };
         my $status      = $obj->run($status_args)->{status};
         like( $status, qr/200/, 'success login status' );
