@@ -26,6 +26,12 @@ sub _signup {
     my $password = $params->{password};
     my $row      = $self->valid_single( $table, { loginid => $loginid } );
     return $self->error->commit("exist $table: $loginid") if $row;
+
+    my $limit = $params->{limitation};
+    if ($limit) {
+        return $self->error->commit("error limitation: $limit")
+          if ( $limit ne 100 ) && ( $limit ne 200 );
+    }
     my $create = $self->safe_insert( $table,
         +{ loginid => $loginid, password => $password, approved => 1, } );
     my $expiry_ts = $self->ts_10_days_later;
@@ -40,7 +46,7 @@ sub _signup {
         }
     );
     my $limitation = $self->safe_insert( 'limitation',
-        +{ loginid => $loginid, status => $params->{limitation} || '200', } );
+        +{ loginid => $loginid, status => $limit || '200', } );
     return {
         sid  => $login->{sid},
         user => { loginid => $loginid, limitation => $limitation->{status} }

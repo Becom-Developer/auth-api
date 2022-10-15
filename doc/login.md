@@ -44,6 +44,10 @@ refresh     Update session id
 
 ```text
 ログインユーザーの作成後はログイン状態
+権限 limitation について
+ユーザー権限はシステム管理者の場合 100
+一般権限は 200
+指定がない場合は 200 で作成
 ```
 
 Request parameters
