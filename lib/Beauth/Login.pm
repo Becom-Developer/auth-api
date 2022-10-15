@@ -13,6 +13,7 @@ sub run {
     return $self->_status($options)  if $options->{method} eq 'status';
     return $self->_end($options)     if $options->{method} eq 'end';
     return $self->_refresh($options) if $options->{method} eq 'refresh';
+    return $self->_seek($options)    if $options->{method} eq 'seek';
     return $self->error->commit(
         "Method not specified correctly: $options->{method}");
 }
@@ -25,7 +26,15 @@ sub _signup {
     my $loginid  = $params->{loginid};
     my $password = $params->{password};
     my $row      = $self->valid_single( $table, { loginid => $loginid } );
-    return $self->error->commit("exist $table: $loginid") if $row;
+    return $self->error->commit("exist $table: $loginid")    if $row;
+    return $self->error->commit("error loginid: $loginid")   if !$loginid;
+    return $self->error->commit("error password: $password") if !$password;
+
+    my $limit = $params->{limitation};
+    if ($limit) {
+        return $self->error->commit("error limitation: $limit")
+          if ( $limit ne 100 ) && ( $limit ne 200 );
+    }
     my $create = $self->safe_insert( $table,
         +{ loginid => $loginid, password => $password, approved => 1, } );
     my $expiry_ts = $self->ts_10_days_later;
@@ -40,7 +49,7 @@ sub _signup {
         }
     );
     my $limitation = $self->safe_insert( 'limitation',
-        +{ loginid => $loginid, status => $params->{limitation} || '200', } );
+        +{ loginid => $loginid, status => $limit || '200', } );
     return {
         sid  => $login->{sid},
         user => { loginid => $loginid, limitation => $limitation->{status} }
@@ -154,6 +163,16 @@ sub _end {
         return { status => 200 };
     }
     return { status => 400 };
+}
+
+sub _seek {
+    my ( $self, @args ) = @_;
+    my $options = shift @args;
+    my $params  = $options->{params};
+    my $loginid = $params->{loginid};
+    my $login   = $self->valid_single( 'login', { loginid => $loginid } );
+    return { status => 400, loginid => $loginid, } if !$login;
+    return { status => 200, loginid => $loginid, };
 }
 
 1;
