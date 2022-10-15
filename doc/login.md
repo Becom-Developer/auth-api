@@ -264,7 +264,6 @@ curl 'https://auth-api.becom.co.jp' \
 --verbose \
 --header 'Content-Type: application/json' \
 --header 'accept: application/json' \
---header 'Cookie: sid=aW5mb0BiZWNvbS5jby5qcDoyMDIyLTAzLTA3IDE0OjI1OjA0' \
 --data-binary '{"resource":"login","method":"seek","apikey":"becom","params":{}}'
 ```
 
