@@ -13,6 +13,7 @@ sub run {
     return $self->_status($options)  if $options->{method} eq 'status';
     return $self->_end($options)     if $options->{method} eq 'end';
     return $self->_refresh($options) if $options->{method} eq 'refresh';
+    return $self->_seek($options)    if $options->{method} eq 'seek';
     return $self->error->commit(
         "Method not specified correctly: $options->{method}");
 }
@@ -25,7 +26,9 @@ sub _signup {
     my $loginid  = $params->{loginid};
     my $password = $params->{password};
     my $row      = $self->valid_single( $table, { loginid => $loginid } );
-    return $self->error->commit("exist $table: $loginid") if $row;
+    return $self->error->commit("exist $table: $loginid")    if $row;
+    return $self->error->commit("error loginid: $loginid")   if !$loginid;
+    return $self->error->commit("error password: $password") if !$password;
 
     my $limit = $params->{limitation};
     if ($limit) {
@@ -160,6 +163,16 @@ sub _end {
         return { status => 200 };
     }
     return { status => 400 };
+}
+
+sub _seek {
+    my ( $self, @args ) = @_;
+    my $options = shift @args;
+    my $params  = $options->{params};
+    my $loginid = $params->{loginid};
+    my $login   = $self->valid_single( 'login', { loginid => $loginid } );
+    return { status => 400, loginid => $loginid, } if !$login;
+    return { status => 200, loginid => $loginid, };
 }
 
 1;

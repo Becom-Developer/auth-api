@@ -173,6 +173,19 @@ subtest 'Login signup' => sub {
     my $res_user = $res->{user};
     is( $res_user->{loginid},    $sample->{loginid},    'success loginid' );
     is( $res_user->{limitation}, $sample->{limitation}, 'success limitation' );
+    subtest 'not id' => sub {
+        my $sample =
+          +{ loginid => '', password => "info", limitation => "100" };
+        my $hash = $obj->run( { method => "signup", params => $sample, } );
+        my $msg  = $hash->{error}->{message};
+        ok( $msg, 'error message' );
+    };
+    subtest 'not password' => sub {
+        my $sample = +{ loginid => '123', password => "", limitation => "100" };
+        my $hash   = $obj->run( { method => "signup", params => $sample, } );
+        my $msg    = $hash->{error}->{message};
+        ok( $msg, 'error message' );
+    };
 };
 
 # 権限 limitation についての挙動
@@ -420,6 +433,18 @@ subtest 'Login' => sub {
           { method => "end", params => { loginid => $sample->{loginid} } };
         my $status = $obj->run($end_args)->{status};
         is( $status, '200', "logout" );
+    };
+    subtest 'seek' => sub {
+        my $ok_id = $sample->{loginid};
+        my $args  = { method => "seek", params => +{ loginid => $ok_id } };
+        my $seek  = $obj->run($args);
+        is( $seek->{loginid}, $ok_id, 'success loginid' );
+        is( $seek->{status},  200,    'success limit' );
+        my $ng_id   = 'ngid@becom.co.jp';
+        my $ng_args = { method => "seek", params => +{ loginid => $ng_id } };
+        my $ng_seek = $obj->run($ng_args);
+        is( $ng_seek->{loginid}, $ng_id, 'success loginid' );
+        is( $ng_seek->{status},  400,    'success limit' );
     };
     subtest 'script login' => sub {
         my $script =

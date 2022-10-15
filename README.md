@@ -12,6 +12,12 @@ git clone にてソースコードを配置後プロジェクト配下にてモ�
 ./cpanm -l ./local --installdeps .
 ```
 
+DBの初期化
+
+```zsh
+./script/beauth build init
+```
+
 ## Work
 
 ローカル開発時の起動方法など
@@ -100,6 +106,18 @@ login     Login system
 user      Registered user
 webapi    Manage apikey
 ```
+
+## Catalog
+
+機能と詳細のドキュメントについて
+
+- ログインの状態をつくる
+  - ユーザー登録がない場合 [doc/login.md#login-signup](doc/login.md#login-signup)
+  - ユーザー登録がある場合 [doc/login.md#login-start](doc/login.md#login-start)
+- ログインの状態を解放する [doc/login.md#login-end](doc/login.md#login-end)
+- 認証の状態を確認する [doc/login.md#login-status](doc/login.md#login-status)
+- セッションIDを更新する [doc/login.md#login-refresh](doc/login.md#login-refresh)
+- ログインIDの存在を確認する [doc/login.md#login-seek](doc/login.md#login-seek)
 
 ## URL
 

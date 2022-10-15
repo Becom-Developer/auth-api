@@ -34,6 +34,7 @@ start       Start login
 end         Logout
 status      Check login status
 refresh     Update session id
+seek        Check existence of login ID
 ```
 
 ## Example
@@ -235,4 +236,40 @@ CLI
 
 ```zsh
 beauth login refresh --params='{}'
+```
+
+### Login seek
+
+ログインIDの存在を確認する
+
+Request parameters
+
+```json
+{ "loginid": "info@becom.co.jp" }
+```
+
+Response parameters
+
+```json
+{
+  "loginid": "info@becom.co.jp",
+  "status": 200
+}
+```
+
+HTTP
+
+```zsh
+curl 'https://auth-api.becom.co.jp' \
+--verbose \
+--header 'Content-Type: application/json' \
+--header 'accept: application/json' \
+--header 'Cookie: sid=aW5mb0BiZWNvbS5jby5qcDoyMDIyLTAzLTA3IDE0OjI1OjA0' \
+--data-binary '{"resource":"login","method":"seek","apikey":"becom","params":{}}'
+```
+
+CLI
+
+```zsh
+beauth login seek --params='{}'
 ```
